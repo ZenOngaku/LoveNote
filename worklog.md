@@ -168,3 +168,19 @@ Work Log:
 Stage Summary:
 - 根因定性：Tailwind v4 扫描范围 = 所有非 gitignore 文件，文档/日志里出现类名原文等同于写在源码里
 - 防复发双保险：壁纸 URL 一律内联 style（AuthShell 头注释已写明）；文档/日志只做文字描述、绝不出现类名原文
+
+---
+Task ID: 9
+Agent: Z.ai Code (主 Agent)
+Task: ① 深色版线条毛边优化 ② 壁纸图案密度调高、图案调小；顺带发现并修复 env 配置文件丢失。
+
+Work Log:
+- 壁纸 v7（make-bg-light.mjs）：SCALE 0.52~0.64 → 0.36~0.44，点阵间距 290 → 210（密度约 ×1.9），抖动 ±14 → ±10；斜向点阵与土豆/爆米花棋盘交替不变。实测点阵 42 → 85 点，放置 43 → 77 只（土豆 32 / 爆米花 45）
+- 深色抗毛边（make-bg-dark.mjs v2）：毛边根因 = 线性 alpha 截断映射把柔和渐变两端削平 + 深底亮线的明暗辉度效应放大 8-bit 阶梯 + webp q85 色度抽样噪声。修复 = alpha 高斯模糊（[1,4,6,4,1]/16 两趟，纯 JS 防sharp吞alpha）抹平阶梯 → smoothstep S 曲线恢复核心实度与端点归零 → webp q92 + smartSubsample
+- 新旧同区域 3 倍放大对比图目检：新深色线条明显更顺滑，小图案边缘干净
+- 意外发现：浏览器实测时「尚未配置 Supabase」横幅复现。排查确认 .env.local 与 .env.local.example 在两轮会话之间（约 09:27）被外部删除（运行中 server 进程内存里还有旧 env，SSR 无横幅；但 Turbopack 监视 env 文件变动并失效重编译，客户端 bundle 以空值重编译 → 仅客户端出横幅）。已恢复两个 env 文件（真实凭据 + 模板），按 PID 全量清杀旧进程、清 .next 重启
+- 验证：SSR 与客户端横幅均消失；错误凭据登录 → toast「邮箱或密码不正确，请重新输入」（真实 Supabase 400 的中文映射，证明客户端 bundle 已内联真实配置）；深浅切换、主题持久化复测正常；新版壁纸手机 390x844 目检两版均自然清晰；页面 errors 零输出；dev.log 全 200
+
+Stage Summary:
+- 壁纸定稿 v7：更小更密（77 只）+ 深色版顺滑无毛边；调参入口集中在两个脚本头部常量
+- 运维警示：.env.local 被外部删除会导致「仅客户端」出现未配置横幅（Turbopack env 失效机制）；若横幅复现，第一步检查 .env.local 是否存在

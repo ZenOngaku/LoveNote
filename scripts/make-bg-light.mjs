@@ -6,6 +6,10 @@
  * 思路：把手绘土豆 / 爆米花图案的「线条墨迹」整只提取出来当印章，
  * 缩小后在纯净底色画布上密集随机散布 —— 图案变小、密度变高、风格不变。
  *
+ * v7：用户反馈「密度再高些、图案再小些」→ 缩放降至 0.36~0.44，
+ *     点阵间距 290 → 210（密度约 ×1.9），抖动同步收敛到 ±10px，
+ *     斜向点阵与土豆/爆米花棋盘交替保持不变。
+ *
  * 踩坑记录（为什么核心管线全部手写）：
  *   · v2 裁矩形色块当印章 → 印章内底色与画布有 1~3 色阶差，留下矩形鬼影
  *   · v3 用 sharp 对 raw 像素做 blur/resize/composite → 掩码 alpha 在
@@ -189,8 +193,8 @@ const stampImages = stamps.map((g) => {
 const CANVAS_W = 1600
 const CANVAS_H = 2648
 const MARGIN = 60
-const SCALE_MIN = 0.52
-const SCALE_MAX = 0.64
+const SCALE_MIN = 0.36
+const SCALE_MAX = 0.44
 const canvas = Buffer.alloc(CANVAS_W * CANVAS_H * 3)
 for (let i = 0; i < CANVAS_W * CANVAS_H; i++) {
   canvas[i * 3] = BG.r
@@ -204,9 +208,9 @@ for (let i = 0; i < CANVAS_W * CANVAS_H; i++) {
  * 土豆 / 爆米花按 (i+j) 奇偶棋盘交替：每只图案的四条对角线近邻
  * 都是另一种图案，两种题材数量与分布严格均匀。
  */
-const LATTICE_D = 290 // 相邻点间距（画布像素）
+const LATTICE_D = 210 // 相邻点间距（画布像素）—— 越小越密（v7: 290→210）
 const STEP = LATTICE_D / Math.SQRT2
-const JITTER = 14 // 轻微抖动，打破机械感但保持斜向可读
+const JITTER = 10 // 轻微抖动，打破机械感但保持斜向可读（随间距同步收敛）
 const points = []
 const kMax = Math.floor((CANVAS_W - MARGIN) / STEP)
 const mMax = Math.floor((CANVAS_H - MARGIN) / STEP)
