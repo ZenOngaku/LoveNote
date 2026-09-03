@@ -16,6 +16,13 @@
  *     点阵 span 居中到能容纳最大印章的区域内，四边对称；越界改为
  *     向内收拢而非整只拒绝。
  *
+ * v9：用户反馈「左右空白仍多，要图案被截断的无限壁纸感」→ 推翻
+ *     v8 的「印章必须完整落在画布内」策略：取消 60px 留白与 span
+ *     居中，点阵直接铺出画布（中心最远越界半个最大印章 + 抖动），
+ *     越界部分被画布自然裁掉 —— 任何视口 cover 裁切下四边都是
+ *     半只图案，看不出边界，无限延伸。碰撞检测改按「画布内可见
+ *     部分」判定，避免边缘印章在画布外虚占位置导致边缘变稀。
+ *
  * 踩坑记录（为什么核心管线全部手写）：
  *   · v2 裁矩形色块当印章 → 印章内底色与画布有 1~3 色阶差，留下矩形鬼影
  *   · v3 用 sharp 对 raw 像素做 blur/resize/composite → 掩码 alpha 在
@@ -25,8 +32,8 @@
  *     缩放（预乘空间面积平均）/ source-over 合成全部手写，数值可控可查
  *
  * 印章 alpha = 连通域墨迹 ∪ 4px 膨胀，再近似高斯模糊 → 边缘柔和无硬边；
- * 缩放在预乘空间做面积平均，边缘不晕深色圈；印章必须完整落在原图
- * 内部（距边 ≥40px）；画布四周留 60px 空白，cover 裁切不切出半只图案。
+ * 缩放在预乘空间做面积平均，边缘不晕深色圈；印章提取时必须完整落在
+ * 原图内部（距边 ≥40px）；v9 起画布上取消留白，印章铺出画布被截断。
  *
  * 输出：public/bg-light.webp（1600x2648，前端继续 bg-cover bg-center 单图呈现）
  * 用法：bun run scripts/make-bg-light.mjs
@@ -198,7 +205,6 @@ const stampImages = stamps.map((g) => {
 // ---------- 7) 斜向点阵布局：45° 旋转菱形格 + 土豆/爆米花棋盘交替 ----------
 const CANVAS_W = 1600
 const CANVAS_H = 2648
-const MARGIN = 60
 const SCALE_MIN = 0.36
 const SCALE_MAX = 0.44
 const canvas = Buffer.alloc(CANVAS_W * CANVAS_H * 3)
@@ -218,32 +224,30 @@ const LATTICE_D = 210 // 相邻点间距（画布像素）—— 越小越密（
 const STEP = LATTICE_D / Math.SQRT2
 const JITTER = 10 // 轻微抖动，打破机械感但保持斜向可读（随间距同步收敛）
 
-// v8 点阵 span 居中：外侧列/行必须留出「最大印章半宽 + 抖动」的落位
-// 余量，否则靠边列会系统性放不下印章 → 画布一侧出现空带。
-// HALF_W/H 取「最大印章盒 × 最大缩放 ÷ 2 + 抖动」，下方有运行时日志校验；
-// colCount 为奇数时首尾两列同为 k 偶 → 都是土豆列，左右推得一样远，对称。
+// v9 无限壁纸：不再「span 居中 + 四周留白」，点阵锚定原点向四周铺出
+// 画布。中心允许越界「最大印章半宽 + 抖动」，越界的 ink 被画布自然
+// 裁掉 → 画布四边出现被切断的半只图案；cover 任意裁切都看不出边界。
 const HALF_W_BOUND = 140
 const HALF_H_BOUND = 95
-const CX0 = MARGIN + HALF_W_BOUND
-const CX1 = CANVAS_W - MARGIN - HALF_W_BOUND
-const CY0 = MARGIN + HALF_H_BOUND
-const CY1 = CANVAS_H - MARGIN - HALF_H_BOUND
-const colCount = Math.floor((CX1 - CX0) / STEP) + 1
-const rowCount = Math.floor((CY1 - CY0) / STEP) + 1
-const xShift = (CX1 - CX0 - (colCount - 1) * STEP) / 2
-const yShift = (CY1 - CY0 - (rowCount - 1) * STEP) / 2
+const OVER_X = HALF_W_BOUND + JITTER
+const OVER_Y = HALF_H_BOUND + JITTER
+const colFrom = Math.ceil(-OVER_X / STEP)
+const colTo = Math.floor((CANVAS_W + OVER_X) / STEP)
+const rowFrom = Math.ceil(-OVER_Y / STEP)
+const rowTo = Math.floor((CANVAS_H + OVER_Y) / STEP)
 const points = []
-for (let k = 0; k < colCount; k++) {
-  for (let m = 0; m < rowCount; m++) {
-    if ((k + m) % 2 !== 0) continue // 菱形点阵只取同奇偶格点
-    points.push({ x: CX0 + xShift + k * STEP, y: CY0 + yShift + m * STEP, type: k % 2 === 0 ? 'potato' : 'popcorn' })
+for (let k = colFrom; k <= colTo; k++) {
+  for (let m = rowFrom; m <= rowTo; m++) {
+    if ((k + m) % 2 !== 0) continue // 菱形点阵只取同奇偶格点（负数取模为 -1/-0，奇偶判断不受影响）
+    points.push({ x: k * STEP, y: m * STEP, type: k % 2 === 0 ? 'potato' : 'popcorn' })
   }
 }
-// 界限校验：最大印章在最大缩放下的半宽/半高不得超过上述 span 余量
+// 越界余量校验：越界区必须容得下「最大印章半宽/半高 + 抖动」，
+// 否则画布最边缘一圈只能靠内圈印章够到，截断量会偏小
 const maxStampW = Math.max(...stampImages.map((s) => s.w))
 const maxStampH = Math.max(...stampImages.map((s) => s.h))
 console.log(
-  `最大印章盒 ${maxStampW}x${maxStampH} → 半宽 ${Math.round((maxStampW * SCALE_MAX) / 2) + JITTER}（界限 ${HALF_W_BOUND}）/ 半高 ${Math.round((maxStampH * SCALE_MAX) / 2) + JITTER}（界限 ${HALF_H_BOUND}）`,
+  `最大印章盒 ${maxStampW}x${maxStampH} → 半宽 ${Math.round((maxStampW * SCALE_MAX) / 2) + JITTER}（越界余量 ${OVER_X}）/ 半高 ${Math.round((maxStampH * SCALE_MAX) / 2) + JITTER}（越界余量 ${OVER_Y}）`,
 )
 // 打散同类型内部取章顺序（不同点同类不重复同一只）
 for (let i = points.length - 1; i > 0; i--) {
@@ -312,8 +316,21 @@ let potatoCursor = Math.floor(rand() * potatoStamps.length)
 let popcornCursor = Math.floor(rand() * popcornStamps.length)
 
 const placed = []
+// 碰撞检测只看「画布内可见部分」：两只越界印章在画布外重叠无妨，
+// 按原始 AABB 判定会把边缘排得过稀 → 边缘反而留空。完全在画布外的
+// 印章不占位（画不出东西）。
+function visibleBox(x, y, w, h) {
+  return {
+    x0: Math.max(0, x),
+    y0: Math.max(0, y),
+    x1: Math.min(CANVAS_W, x + w),
+    y1: Math.min(CANVAS_H, y + h),
+  }
+}
 function hits(x, y, w, h) {
-  return placed.some((p) => x < p.x + p.w + 8 && p.x < x + w + 8 && y < p.y + p.h + 8 && p.y < y + h + 8)
+  const a = visibleBox(x, y, w, h)
+  if (a.x0 >= a.x1 || a.y0 >= a.y1) return false
+  return placed.some((p) => a.x0 < p.x1 + 8 && p.x0 < a.x1 + 8 && a.y0 < p.y1 + 8 && p.y0 < a.y1 + 8)
 }
 
 /**
@@ -345,12 +362,16 @@ function stampAt(st, dx, dy, dw, dh, flop) {
     }
   }
   for (let ty = 0; ty < dh; ty++) {
+    const gy = dy + ty
+    if (gy < 0 || gy >= CANVAS_H) continue // v9：越界部分直接裁掉（截断印章）
     for (let tx = 0; tx < dw; tx++) {
+      const gx = dx + tx
+      if (gx < 0 || gx >= CANVAS_W) continue
       const ti = ty * dw + tx
       if (!cnt[ti]) continue
       const a = acc[ti * 4 + 3] / cnt[ti] // 平均 alpha
       if (a < 0.004) continue
-      const ci = ((dy + ty) * CANVAS_W + (dx + tx)) * 3
+      const ci = (gy * CANVAS_W + gx) * 3
       const inv = 1 / (a * cnt[ti])
       const sr = acc[ti * 4] * inv // 还原预乘 → 印章颜色
       const sg = acc[ti * 4 + 1] * inv
@@ -379,13 +400,12 @@ for (const pt of points) {
     for (const scale of [SCALE_MAX, (SCALE_MAX + SCALE_MIN) / 2, SCALE_MIN]) {
       const dw = Math.max(1, Math.round(st.w * scale))
       const dh = Math.max(1, Math.round(st.h * scale))
-      // 越界时向画布内收拢（而非整只拒绝）：span 居中后最多收拢几十 px，
-      // 不影响斜向观感，却能保证边缘列不会被系统性清空
-      const x = Math.min(CANVAS_W - MARGIN - dw, Math.max(MARGIN, Math.round(pt.x + (rand() - 0.5) * JITTER * 2 - dw / 2)))
-      const y = Math.min(CANVAS_H - MARGIN - dh, Math.max(MARGIN, Math.round(pt.y + (rand() - 0.5) * JITTER * 2 - dh / 2)))
+      // v9：不再向画布内收拢 —— 允许越出画布，画布外部分被裁掉（截断感来源）
+      const x = Math.round(pt.x + (rand() - 0.5) * JITTER * 2 - dw / 2)
+      const y = Math.round(pt.y + (rand() - 0.5) * JITTER * 2 - dh / 2)
       if (hits(x, y, dw, dh)) continue
       stampAt(st, x, y, dw, dh, rand() < 0.5) // 水平镜像增加变奏（线条图案无方向性）
-      placed.push({ x, y, w: dw, h: dh })
+      placed.push(visibleBox(x, y, dw, dh))
       cursorRef()
       done = true
       break
