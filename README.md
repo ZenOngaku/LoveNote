@@ -74,9 +74,10 @@
 │       └── helpers.ts             # 工具函数（时间格式化/错误翻译/复制）
 ├── public/
 │   ├── bg-light.webp              # 认证页浅色壁纸（小图案密排）
-│   └── bg-dark.webp               # 认证页深色壁纸（备用，见「壁纸定制」）
+│   ├── bg-light.webp              # 认证页浅色壁纸（斜向点阵小图案）
+│   └── bg-dark.webp               # 认证页深色壁纸（墨色重映射生成）
 ├── scripts/
-│   ├── make-bg-light.mjs          # 浅色壁纸生成：墨迹印章 + 缩小密排
+│   ├── make-bg-light.mjs          # 浅色壁纸生成：墨迹印章 + 斜向点阵密排
 │   └── make-bg-dark.mjs           # 深色壁纸生成：墨色重映射
 ├── .github/workflows/keep-alive.yml # Supabase 免费版保活定时任务
 ├── .env.local.example             # ⭐ 环境变量示例
@@ -218,20 +219,19 @@ npm run dev
 
 ## 🎨 壁纸定制（浅色 / 深色）
 
-认证四页（登录/注册/忘记密码/重置密码）的背景由 `src/components/auth/AuthShell.tsx` 统一控制，
-当前使用 `public/bg-light.webp`（手绘土豆 + 爆米花小图案密排，无拼接无缝，`bg-cover` 单图呈现）。
+认证四页（登录/注册/忘记密码/重置密码）的背景由 `src/components/auth/AuthShell.tsx` 统一控制：
+`public/bg-light.webp` 米色底棕色线条 / `public/bg-dark.webp` 深可可底奶油色线条，
+均为单图 `bg-cover` 呈现（无拼接无缝），图案按 45° 斜向点阵排列、土豆与爆米花棋盘交替均匀分布。
 
-**切换深色版**（已备好 `public/bg-dark.webp`，深可可底 + 奶油色线条）：
-
-1. `AuthShell.tsx` 中把 `bg-light.webp` 改为 `bg-dark.webp`，底色类 `bg-[#fdfbee]` 改为 `bg-[#2b1a13]`；
-2. 文字/输入框配色需同步换为深色版方案（可参照现有 rose 色阶反向取色）；
-3. `AuthGuard.tsx` 的 SplashScreen 底色同步修改。
+**深浅切换（已内置）**：每个认证页右上角有月亮/太阳切换按钮，
+选择持久化在 localStorage（`lovenote-wallpaper-theme`），刷新/重开浏览器保持，多标签页同步；
+卡片、输入框、文字的深浅配色集中在 `src/components/auth/WallpaperTheme.tsx` 维护。
 
 **重新生成壁纸**（更换源图或调整图案大小/密度）：
 
 ```bash
 # 浅色版：修改 scripts/make-bg-light.mjs 顶部 SRC（源图）与
-#         SCALE_MIN/SCALE_MAX（图案大小）、cols/rows（密度）后运行
+#         SCALE_MIN/SCALE_MAX（图案大小）、LATTICE_D（点阵间距，越小越密）后运行
 bun run scripts/make-bg-light.mjs
 # 深色版：基于浅色版自动重上色（DARK_BG / INK 可改配色）
 bun run scripts/make-bg-dark.mjs

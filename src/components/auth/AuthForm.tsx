@@ -18,6 +18,18 @@ import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 import { Loader2, Lock, Mail } from 'lucide-react'
 import { AuthShell } from '@/components/auth/AuthShell'
+import {
+  authCardClass,
+  authHeadingClass,
+  authIconBadgeClass,
+  authInputClass,
+  authInputIconClass,
+  authLabelClass,
+  authLinkSoftClass,
+  authLinkStrongClass,
+  authMutedClass,
+  useWallpaperTheme,
+} from '@/components/auth/WallpaperTheme'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -31,6 +43,8 @@ interface AuthFormProps {
 export function AuthForm({ mode }: AuthFormProps) {
   const isLogin = mode === 'login'
   const { signIn, signUp } = useAuth()
+  const { theme } = useWallpaperTheme()
+  const dark = theme === 'dark'
   const router = useRouter()
 
   const [email, setEmail] = useState('')
@@ -89,12 +103,12 @@ export function AuthForm({ mode }: AuthFormProps) {
   if (needsVerify) {
     return (
       <AuthShell>
-        <div className="mt-6 w-full max-w-sm rounded-3xl border border-rose-100/80 bg-white/85 p-8 text-center shadow-sm backdrop-blur-sm">
-          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-rose-100">
+        <div className={`mt-6 w-full max-w-sm rounded-3xl border p-8 text-center shadow-sm backdrop-blur-sm ${authCardClass(dark)}`}>
+          <div className={`mx-auto flex h-16 w-16 items-center justify-center rounded-full ${authIconBadgeClass(dark)}`}>
             <Mail className="h-8 w-8 text-rose-400" />
           </div>
-          <h2 className="mt-4 text-lg font-semibold text-rose-900">验证邮件已发送</h2>
-          <p className="mt-2 text-sm leading-relaxed text-rose-900/60">
+          <h2 className={`mt-4 text-lg font-semibold ${authHeadingClass(dark)}`}>验证邮件已发送</h2>
+          <p className={`mt-2 text-sm leading-relaxed ${authMutedClass(dark)}`}>
             请前往 <span className="font-medium text-rose-500">{email}</span> 的收件箱，
             点击确认链接完成验证后再登录。
           </p>
@@ -116,18 +130,18 @@ export function AuthForm({ mode }: AuthFormProps) {
       {/* 表单卡片 */}
       <form
         onSubmit={handleSubmit}
-        className="mt-5 w-full max-w-sm space-y-4 rounded-3xl border border-rose-100/80 bg-white/85 p-6 shadow-sm backdrop-blur-sm"
+        className={`mt-5 w-full max-w-sm space-y-4 rounded-3xl border p-6 shadow-sm backdrop-blur-sm ${authCardClass(dark)}`}
       >
-        <h2 className="text-base font-semibold text-rose-900">
+        <h2 className={`text-base font-semibold ${authHeadingClass(dark)}`}>
           {isLogin ? '登录' : '创建账号'}
         </h2>
 
         <div className="space-y-2">
-          <Label htmlFor="email" className="text-rose-900/70">
+          <Label htmlFor="email" className={authLabelClass(dark)}>
             邮箱
           </Label>
           <div className="relative">
-            <Mail className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-rose-300" />
+            <Mail className={`pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 ${authInputIconClass(dark)}`} />
             <Input
               id="email"
               type="email"
@@ -137,7 +151,7 @@ export function AuthForm({ mode }: AuthFormProps) {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               // 16px 字号避免 iOS 聚焦时页面自动缩放
-              className="h-12 rounded-xl border-rose-200/70 bg-white/70 pl-10 text-base text-rose-900 placeholder:text-rose-400 focus-visible:border-rose-300 focus-visible:ring-rose-200/70"
+              className={`h-12 rounded-xl pl-10 text-base ${authInputClass(dark)}`}
               required
             />
           </div>
@@ -145,21 +159,21 @@ export function AuthForm({ mode }: AuthFormProps) {
 
         <div className="space-y-2">
           <div className="flex items-center justify-between">
-            <Label htmlFor="password" className="text-rose-900/70">
+            <Label htmlFor="password" className={authLabelClass(dark)}>
               密码
             </Label>
             {/* 登录模式提供忘记密码入口 */}
             {isLogin && (
               <Link
                 href="/forgot-password"
-                className="text-xs text-rose-400 hover:text-rose-500 hover:underline"
+                className={`text-xs hover:underline ${authLinkSoftClass(dark)}`}
               >
                 忘记密码？
               </Link>
             )}
           </div>
           <div className="relative">
-            <Lock className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-rose-300" />
+            <Lock className={`pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 ${authInputIconClass(dark)}`} />
             <Input
               id="password"
               type="password"
@@ -167,7 +181,7 @@ export function AuthForm({ mode }: AuthFormProps) {
               placeholder="至少 6 位字符"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="h-12 rounded-xl border-rose-200/70 bg-white/70 pl-10 text-base text-rose-900 placeholder:text-rose-400 focus-visible:border-rose-300 focus-visible:ring-rose-200/70"
+              className={`h-12 rounded-xl pl-10 text-base ${authInputClass(dark)}`}
               required
             />
           </div>
@@ -176,11 +190,11 @@ export function AuthForm({ mode }: AuthFormProps) {
         {/* 注册时额外确认一次密码 */}
         {!isLogin && (
           <div className="space-y-2">
-            <Label htmlFor="confirmPassword" className="text-rose-900/70">
+            <Label htmlFor="confirmPassword" className={authLabelClass(dark)}>
               确认密码
             </Label>
             <div className="relative">
-              <Lock className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-rose-300" />
+              <Lock className={`pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 ${authInputIconClass(dark)}`} />
               <Input
                 id="confirmPassword"
                 type="password"
@@ -188,7 +202,7 @@ export function AuthForm({ mode }: AuthFormProps) {
                 placeholder="再输入一次密码"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
-                className="h-12 rounded-xl border-rose-200/70 bg-white/70 pl-10 text-base text-rose-900 placeholder:text-rose-400 focus-visible:border-rose-300 focus-visible:ring-rose-200/70"
+                className={`h-12 rounded-xl pl-10 text-base ${authInputClass(dark)}`}
                 required
               />
             </div>
@@ -206,18 +220,18 @@ export function AuthForm({ mode }: AuthFormProps) {
       </form>
 
       {/* 切换登录 / 注册 */}
-      <p className="mt-6 text-sm text-rose-900/60">
+      <p className={`mt-6 text-sm ${authMutedClass(dark)}`}>
         {isLogin ? (
           <>
             还没有账号？
-            <Link href="/register" className="ml-1 font-medium text-rose-500 hover:underline">
+            <Link href="/register" className={`ml-1 font-medium hover:underline ${authLinkStrongClass(dark)}`}>
               去注册
             </Link>
           </>
         ) : (
           <>
             已有账号？
-            <Link href="/login" className="ml-1 font-medium text-rose-500 hover:underline">
+            <Link href="/login" className={`ml-1 font-medium hover:underline ${authLinkStrongClass(dark)}`}>
               去登录
             </Link>
           </>

@@ -130,3 +130,25 @@ Stage Summary:
 - 真实 Supabase 已接入且链路实测打通：Auth 登录/注册请求真实到达、错误正确翻译、三表 + RPC + RLS 就位（用户已自行执行 schema.sql，本轮确认无误）
 - 壁纸定稿：浅色小图案密排版上线（手机自然不突兀）；深色版资产已生成待切换（bg-dark.webp + AuthShell 一行换 URL，文字配色需同步做深色统一）
 - 遗留：注册需真实可收件邮箱（Supabase 新项目默认拒无 MX 域名）；深色版切换涉及文字/输入框深色统一，等用户确认后实施
+
+---
+Task ID: 7
+Agent: Z.ai Code (主 Agent)
+Task: ① 浅色壁纸改斜向排版 + 土豆/爆米花数量均匀分布 ② 认证页增加深浅壁纸手动切换按钮（深色版全套落地）。
+
+Work Log:
+- 壁纸 v6（scripts/make-bg-light.mjs）：散布布局从「随机网格抖动」改为 45° 旋转菱形点阵（点 (i,j) 落在 (i+j,j-i)×d/√2，LATTICE_D=290，抖动 ±14px），图案沿两个对角方向整齐排列；土豆/爆米花按点阵奇偶棋盘交替，每只图案的对角线近邻必为另一种题材，数量 18:24 接近均分
+- 印章分类踩坑：土豆是斜放椭圆，轴对齐包围盒长宽比判别失效（全被分成爆米花）；改用墨迹二阶矩（协方差特征值比 sqrt(λ1/λ2)）度量主轴细长比，旋转不变
+- 连锁合并问题：PAD=16 时相邻图案外扩盒相交连成混合簇（曾出现 788x700 巨型土豆+爆米花连体，分类失真且仅剩 2 只纯土豆章）；PAD 降至 8 打断连锁、删去冗余包容合并，得到 4 只土豆 + 11 只爆米花共 15 章，42 点阵点全放满
+- 深浅切换架构：新建 src/components/auth/WallpaperTheme.tsx —— useSyncExternalStore 订阅 localStorage（key lovenote-wallpaper-theme），SSR/水合期固定浅色避免错配，不违反 react-hooks/set-state-in-effect；toggle 写存储 + 通知监听者，storage 事件跨标签页同步；导出 9 个配色构建器（卡片/输入框/标题/Label/链接/图标）集中维护深浅两版样式
+- AuthShell：根容器按主题切换壁纸 URL 与底色（bg-light/#fdfbee ↔ bg-dark/#2b1a13）+ 右上角月亮/太阳切换按钮（44px 触达）；SplashScreen 底色跟随已存主题
+- AuthForm（登录/注册/验证提示三视图）、forgot-password、reset-password（失效提示/新密码表单）全部换用主题构建器，深色版卡片 #3a241a/85、输入白 10%、文字 rose-50/100 系
+- 踩坑：JSX 三元里写 bg-[url(\'/bg-dark.webp\')] 的转义反斜杠被 Tailwind 扫描器吞进类名，生成畸形 CSS 报 Module not found；改为双引号 bg-[url("/bg-dark.webp")] 并清 .next 缓存重启解决
+- MultiEdit 非原子教训：一条 old_str 不匹配时前面编辑仍会落盘（AuthForm import 被插重两次），已清理并改用单 Edit 逐段核对
+- 验证：bun run lint 零错误、tsc src/ 零错误；agent-browser 实测 390x844 + 1280x800：浅色斜向点阵自然、点按钮切深色全套（壁纸/卡片/输入框/按钮/图标）即刻生效、刷新持久化（storage 确认 dark）、跨页保持、往返切回正常；登录错误账号仍返回真实 Supabase 错误中文 toast；console 无报错、dev.log 全 200
+- README：文件清单与「🎨 壁纸定制」章节更新（内置切换说明 + LATTICE_D 调参）；清理调试打印；浏览器已关闭
+
+Stage Summary:
+- 壁纸定稿斜向点阵版：对角对齐 + 棋盘交替均匀分布，浅深两版同构（深版由浅版自动重上色）
+- 深色版从「资产」升级为「完整主题」：四认证页一键切换、持久化、跨标签同步，用户可随时自选
+- 全部源码 lint/tsc 零错误，浏览器端到端验证通过

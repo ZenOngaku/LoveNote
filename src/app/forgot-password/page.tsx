@@ -20,6 +20,18 @@ import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 import { Loader2, Mail, MailCheck } from 'lucide-react'
 import { AuthShell } from '@/components/auth/AuthShell'
+import {
+  authCardClass,
+  authHeadingClass,
+  authIconBadgeClass,
+  authInputClass,
+  authInputIconClass,
+  authLabelClass,
+  authLinkSoftClass,
+  authLinkStrongClass,
+  authMutedClass,
+  useWallpaperTheme,
+} from '@/components/auth/WallpaperTheme'
 import { ConfigNotice } from '@/components/layout/ConfigNotice'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -28,6 +40,8 @@ import { useAuth } from '@/hooks/useAuth'
 
 export default function ForgotPasswordPage() {
   const { resetPassword } = useAuth()
+  const { theme } = useWallpaperTheme()
+  const dark = theme === 'dark'
   const router = useRouter()
 
   const [email, setEmail] = useState('')
@@ -57,12 +71,12 @@ export default function ForgotPasswordPage() {
   if (sent) {
     return (
       <AuthShell>
-        <div className="mt-6 w-full max-w-sm rounded-3xl border border-rose-100/80 bg-white/85 p-8 text-center shadow-sm backdrop-blur-sm">
-          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-rose-100">
+        <div className={`mt-6 w-full max-w-sm rounded-3xl border p-8 text-center shadow-sm backdrop-blur-sm ${authCardClass(dark)}`}>
+          <div className={`mx-auto flex h-16 w-16 items-center justify-center rounded-full ${authIconBadgeClass(dark)}`}>
             <MailCheck className="h-8 w-8 text-rose-400" />
           </div>
-          <h2 className="mt-4 text-lg font-semibold text-rose-900">重置邮件已发送</h2>
-          <p className="mt-2 text-sm leading-relaxed text-rose-900/60">
+          <h2 className={`mt-4 text-lg font-semibold ${authHeadingClass(dark)}`}>重置邮件已发送</h2>
+          <p className={`mt-2 text-sm leading-relaxed ${authMutedClass(dark)}`}>
             请前往 <span className="font-medium text-rose-500">{email.trim()}</span>{' '}
             的收件箱（注意垃圾邮件箱），点击邮件中的链接设置新密码，链接 1 小时内有效。
           </p>
@@ -76,7 +90,7 @@ export default function ForgotPasswordPage() {
           <button
             type="button"
             onClick={() => setSent(false)}
-            className="mt-3 text-sm text-rose-400 hover:text-rose-500 hover:underline"
+            className={`mt-3 text-sm hover:underline ${authLinkSoftClass(dark)}`}
           >
             没有收到？重新发送
           </button>
@@ -92,19 +106,19 @@ export default function ForgotPasswordPage() {
 
       <form
         onSubmit={handleSubmit}
-        className="mt-5 w-full max-w-sm space-y-4 rounded-3xl border border-rose-100/80 bg-white/85 p-6 shadow-sm backdrop-blur-sm"
+        className={`mt-5 w-full max-w-sm space-y-4 rounded-3xl border p-6 shadow-sm backdrop-blur-sm ${authCardClass(dark)}`}
       >
-        <h2 className="text-base font-semibold text-rose-900">找回密码</h2>
-        <p className="text-sm leading-relaxed text-rose-900/60">
+        <h2 className={`text-base font-semibold ${authHeadingClass(dark)}`}>找回密码</h2>
+        <p className={`text-sm leading-relaxed ${authMutedClass(dark)}`}>
           输入注册时使用的邮箱，我们会发送一封包含重置链接的邮件。
         </p>
 
         <div className="space-y-2">
-          <Label htmlFor="email" className="text-rose-900/70">
+          <Label htmlFor="email" className={authLabelClass(dark)}>
             邮箱
           </Label>
           <div className="relative">
-            <Mail className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-rose-300" />
+            <Mail className={`pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 ${authInputIconClass(dark)}`} />
             <Input
               id="email"
               type="email"
@@ -114,7 +128,7 @@ export default function ForgotPasswordPage() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               // 16px 字号避免 iOS 聚焦时页面自动缩放
-              className="h-12 rounded-xl border-rose-200/70 bg-white/70 pl-10 text-base text-rose-900 placeholder:text-rose-400 focus-visible:border-rose-300 focus-visible:ring-rose-200/70"
+              className={`h-12 rounded-xl pl-10 text-base ${authInputClass(dark)}`}
               required
             />
           </div>
@@ -130,9 +144,9 @@ export default function ForgotPasswordPage() {
         </Button>
       </form>
 
-      <p className="mt-6 text-sm text-rose-900/60">
+      <p className={`mt-6 text-sm ${authMutedClass(dark)}`}>
         想起来了？
-        <Link href="/login" className="ml-1 font-medium text-rose-500 hover:underline">
+        <Link href="/login" className={`ml-1 font-medium hover:underline ${authLinkStrongClass(dark)}`}>
           去登录
         </Link>
       </p>

@@ -12,18 +12,33 @@ import { useEffect, type ReactNode } from 'react'
 import { useRouter } from 'next/navigation'
 import { Heart } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
+import { useWallpaperTheme } from '@/components/auth/WallpaperTheme'
 
-/** 粉色加载过渡页（会话检查中 / 跳转中） */
+/**
+ * 加载过渡页（会话检查中 / 跳转中）。
+ * 底色跟随用户上次选择的壁纸主题（localStorage），避免深色用户
+ * 在进入认证页前闪过一屏浅色。
+ */
 export function SplashScreen() {
+  const { theme } = useWallpaperTheme()
+  const dark = theme === 'dark'
   return (
     <div
-      className="flex min-h-screen flex-col items-center justify-center bg-[#fdfbee]"
+      className={`flex min-h-screen flex-col items-center justify-center transition-colors duration-300 ${
+        dark ? 'bg-[#2b1a13]' : 'bg-[#fdfbee]'
+      }`}
       aria-label="加载中"
     >
-      <div className="flex h-16 w-16 animate-pulse items-center justify-center rounded-full bg-rose-100">
+      <div
+        className={`flex h-16 w-16 animate-pulse items-center justify-center rounded-full ${
+          dark ? 'bg-white/10' : 'bg-rose-100'
+        }`}
+      >
         <Heart className="h-8 w-8 fill-rose-300 text-rose-400" />
       </div>
-      <p className="mt-4 text-sm font-medium tracking-widest text-rose-400">LoveNote</p>
+      <p className={`mt-4 text-sm font-medium tracking-widest ${dark ? 'text-rose-200/80' : 'text-rose-400'}`}>
+        LoveNote
+      </p>
     </div>
   )
 }

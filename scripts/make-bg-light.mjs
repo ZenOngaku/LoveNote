@@ -85,8 +85,11 @@ for (let start = 0; start < total; start++) {
 const EDGE_SAFE = 40
 const alive = comps.map((c) => !(c.minX <= EDGE_SAFE || c.minY <= EDGE_SAFE || c.maxX >= W - EDGE_SAFE || c.maxY >= H - EDGE_SAFE))
 
-// ---------- 5) 聚合成「印章」：小外扩(16px)相交合并 + 包围盒包容合并 ----------
-const PAD = 16
+// ---------- 5) 聚合成「印章」：小外扩(8px)相交合并 ----------
+// PAD 只需盖住线条旁的晕圈余量；取太大（如16px+）会把相邻图案
+// 连锁合并成混合簇（土豆+爆米花连体），导致后续形状分类失真。
+// 土豆内部的斑点/短须与轮廓盒天然相交，无需额外的包容合并。
+const PAD = 8
 const parent = comps.map((_, i) => i)
 function find(x) { while (parent[x] !== x) { parent[x] = parent[parent[x]]; x = parent[x] } return x }
 function union(a, b) { parent[find(a)] = find(b) }
@@ -100,31 +103,6 @@ for (let i = 0; i < boxes.length; i++) {
     const a = boxes[i], b = boxes[j]
     if (a.minX <= b.maxX && b.minX <= a.maxX && a.minY <= b.maxY && b.minY <= a.maxY) union(i, j)
   }
-}
-// 包容合并：小印章包围盒完全落在大印章包围盒(+24px)内部时并入
-// （土豆/爆米花身体中央的斑点、内卷小笔画离主轮廓远，靠这一步收编）
-for (let pass = 0; pass < 3; pass++) {
-  const rb = new Map()
-  comps.forEach((c, i) => {
-    if (!alive[i]) return
-    const r = find(i)
-    if (!rb.has(r)) rb.set(r, { ...boxes[i] })
-    const b = rb.get(r)
-    b.minX = Math.min(b.minX, boxes[i].minX); b.maxX = Math.max(b.maxX, boxes[i].maxX)
-    b.minY = Math.min(b.minY, boxes[i].minY); b.maxY = Math.max(b.maxY, boxes[i].maxY)
-  })
-  let merged = false
-  outer: for (const [ra, ba] of rb) {
-    for (const [rbk, bb] of rb) {
-      if (ra === rbk) continue
-      if (ba.minX >= bb.minX - 24 && ba.maxX <= bb.maxX + 24 && ba.minY >= bb.minY - 24 && ba.maxY <= bb.maxY + 24) {
-        parent[ra] = rbk
-        merged = true
-        break outer
-      }
-    }
-  }
-  if (!merged) break
 }
 const clustersMap = new Map()
 comps.forEach((c, i) => {
@@ -207,7 +185,7 @@ const stampImages = stamps.map((g) => {
   return { rgb, mask: soft, w, h }
 })
 
-// ---------- 7) 散布布局 + 预乘缩放 + source-over 合成（纯 JS） ----------
+// ---------- 7) 斜向点阵布局：45° 旋转菱形格 + 土豆/爆米花棋盘交替 ----------
 const CANVAS_W = 1600
 const CANVAS_H = 2648
 const MARGIN = 60
@@ -220,19 +198,93 @@ for (let i = 0; i < CANVAS_W * CANVAS_H; i++) {
   canvas[i * 3 + 2] = BG.b
 }
 
-const cols = 5
-const rows = 9
-const cellW = (CANVAS_W - MARGIN * 2) / cols
-const cellH = (CANVAS_H - MARGIN * 2) / rows
-const cells = []
-for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) cells.push({ r, c })
-for (let i = cells.length - 1; i > 0; i--) {
-  const j = Math.floor(rand() * (i + 1))
-  ;[cells[i], cells[j]] = [cells[j], cells[i]]
+/**
+ * 点阵生成：点 (i,j) 落在 (i+j, j-i)*STEP —— 即把正方形点阵旋转 45°，
+ * 图案沿两个对角方向整齐排列（斜向纹理）；STEP = 邻间距 d/√2。
+ * 土豆 / 爆米花按 (i+j) 奇偶棋盘交替：每只图案的四条对角线近邻
+ * 都是另一种图案，两种题材数量与分布严格均匀。
+ */
+const LATTICE_D = 290 // 相邻点间距（画布像素）
+const STEP = LATTICE_D / Math.SQRT2
+const JITTER = 14 // 轻微抖动，打破机械感但保持斜向可读
+const points = []
+const kMax = Math.floor((CANVAS_W - MARGIN) / STEP)
+const mMax = Math.floor((CANVAS_H - MARGIN) / STEP)
+for (let k = 1; k <= kMax; k++) {
+  for (let m = 1; m <= mMax; m++) {
+    if ((k + m) % 2 !== 0) continue // 菱形点阵只取同奇偶格点
+    points.push({ x: k * STEP, y: m * STEP, type: k % 2 === 0 ? 'potato' : 'popcorn' })
+  }
 }
+// 打散同类型内部取章顺序（不同点同类不重复同一只）
+for (let i = points.length - 1; i > 0; i--) {
+  const j = Math.floor(rand() * (i + 1))
+  ;[points[i], points[j]] = [points[j], points[i]]
+}
+
+// 按形状细长程度分类印章：土豆=斜放细长椭圆，爆米花=近圆形云朵。
+// 注意：土豆是斜放的，轴对齐包围盒接近方形，长宽比判别会失效；
+// 这里用墨迹的二阶矩（协方差特征值比 sqrt(λ1/λ2)）度量主轴细长比，
+// 对任意旋转角都稳定。
+function elongation(st) {
+  const { mask, w, h } = st
+  let sw = 0, sx = 0, sy = 0
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      const v = mask[y * w + x]
+      if (v <= 128) continue
+      sw += v
+      sx += v * x
+      sy += v * y
+    }
+  }
+  if (!sw) return 1
+  const mx = sx / sw
+  const my = sy / sw
+  let xx = 0, yy = 0, xy = 0
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      const v = mask[y * w + x]
+      if (v <= 128) continue
+      const dx = x - mx
+      const dy = y - my
+      xx += v * dx * dx
+      yy += v * dy * dy
+      xy += v * dx * dy
+    }
+  }
+  xx /= sw
+  yy /= sw
+  xy /= sw
+  const tr = xx + yy
+  const det = Math.sqrt(Math.max(0, (xx - yy) * (xx - yy) + 4 * xy * xy))
+  const l1 = (tr + det) / 2
+  const l2 = Math.max(1e-6, (tr - det) / 2)
+  return Math.sqrt(l1 / l2)
+}
+const ratio = stampImages.map((st) => elongation(st))
+console.log(`细长比分布: ${ratio.map((r) => r.toFixed(2)).join(', ')}`)
+const potatoStamps = []
+const popcornStamps = []
+stampImages.forEach((st, idx) => {
+  ;(ratio[idx] >= 1.3 ? potatoStamps : popcornStamps).push(st)
+})
+// 兜底：某一类为空时按细长比中位数二分，保证两边都有章可用
+if (!potatoStamps.length || !popcornStamps.length) {
+  potatoStamps.length = 0
+  popcornStamps.length = 0
+  const sorted = stampImages.map((st, idx) => ({ st, r: ratio[idx] })).sort((a, b) => b.r - a.r)
+  const half = Math.ceil(sorted.length / 2)
+  sorted.forEach((e, i) => (i < half ? potatoStamps : popcornStamps).push(e.st))
+  console.log('警告：细长比阈值分类失衡，已按中位数二分兜底')
+}
+console.log(`印章分类：土豆 ${potatoStamps.length} 只，爆米花 ${popcornStamps.length} 只`)
+let potatoCursor = Math.floor(rand() * potatoStamps.length)
+let popcornCursor = Math.floor(rand() * popcornStamps.length)
+
 const placed = []
 function hits(x, y, w, h) {
-  return placed.some((p) => x < p.x + p.w + 10 && p.x < x + w + 10 && y < p.y + p.h + 10 && p.y < y + h + 10)
+  return placed.some((p) => x < p.x + p.w + 8 && p.x < x + w + 8 && y < p.y + p.h + 8 && p.y < y + h + 8)
 }
 
 /**
@@ -281,28 +333,41 @@ function stampAt(st, dx, dy, dw, dh, flop) {
   }
 }
 
-let stampCursor = Math.floor(rand() * stampImages.length)
-for (const cell of cells) {
-  const cx = MARGIN + cell.c * cellW + cellW / 2 + (rand() - 0.5) * cellW * 0.5
-  const cy = MARGIN + cell.r * cellH + cellH / 2 + (rand() - 0.5) * cellH * 0.5
-  for (let tryN = 0; tryN < stampImages.length; tryN++) {
-    const idx = (stampCursor + tryN) % stampImages.length
-    const st = stampImages[idx]
-    const scale = SCALE_MIN + rand() * (SCALE_MAX - SCALE_MIN)
-    // 等比缩放（不做宽高交换/旋转：非等比会把土豆压变形）
-    const dw = Math.max(1, Math.round(st.w * scale))
-    const dh = Math.max(1, Math.round(st.h * scale))
-    const x = Math.round(cx - dw / 2)
-    const y = Math.round(cy - dh / 2)
-    if (x < MARGIN || y < MARGIN || x + dw > CANVAS_W - MARGIN || y + dh > CANVAS_H - MARGIN) continue
-    if (hits(x, y, dw, dh)) continue
-    stampAt(st, x, y, dw, dh, rand() < 0.5) // 水平镜像增加变奏（线条图案无方向性）
-    placed.push({ x, y, w: dw, h: dh })
-    stampCursor = (idx + 1 + Math.floor(rand() * 2)) % stampImages.length
-    break
+let placedCount = 0
+let potatoCount = 0
+let popcornCount = 0
+for (const pt of points) {
+  // 该点缩放后能容纳的半宽（保证印章完整落在留白边内）
+  const pool = pt.type === 'potato' ? potatoStamps : popcornStamps
+  const cursorRef = pt.type === 'potato' ? () => (potatoCursor = (potatoCursor + 1 + Math.floor(rand() * 2)) % pool.length) : () => (popcornCursor = (popcornCursor + 1 + Math.floor(rand() * 2)) % pool.length)
+  const startCursor = pt.type === 'potato' ? potatoCursor : popcornCursor
+
+  let done = false
+  for (let tryN = 0; tryN < pool.length && !done; tryN++) {
+    const idx = (startCursor + tryN) % pool.length
+    const st = pool[idx]
+    // 缩放从大到小降档尝试：优先大图案，碰撞/越界则缩小，仍不行换一只
+    for (const scale of [SCALE_MAX, (SCALE_MAX + SCALE_MIN) / 2, SCALE_MIN]) {
+      const dw = Math.max(1, Math.round(st.w * scale))
+      const dh = Math.max(1, Math.round(st.h * scale))
+      const x = Math.round(pt.x + (rand() - 0.5) * JITTER * 2 - dw / 2)
+      const y = Math.round(pt.y + (rand() - 0.5) * JITTER * 2 - dh / 2)
+      if (x < MARGIN || y < MARGIN || x + dw > CANVAS_W - MARGIN || y + dh > CANVAS_H - MARGIN) continue
+      if (hits(x, y, dw, dh)) continue
+      stampAt(st, x, y, dw, dh, rand() < 0.5) // 水平镜像增加变奏（线条图案无方向性）
+      placed.push({ x, y, w: dw, h: dh })
+      cursorRef()
+      done = true
+      break
+    }
+  }
+  if (done) {
+    placedCount++
+    if (pt.type === 'potato') potatoCount++
+    else popcornCount++
   }
 }
-console.log(`画布 ${CANVAS_W}x${CANVAS_H} 放置印章 ${placed.length} 只`)
+console.log(`画布 ${CANVAS_W}x${CANVAS_H} 点阵 ${points.length} 点，放置 ${placedCount} 只（土豆 ${potatoCount} / 爆米花 ${popcornCount}）`)
 
 // ---------- 8) 输出 ----------
 await sharp(canvas, { raw: { width: CANVAS_W, height: CANVAS_H, channels: 3 } })

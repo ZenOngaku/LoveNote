@@ -20,6 +20,18 @@ import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 import { KeyRound, Loader2, MailX } from 'lucide-react'
 import { AuthShell } from '@/components/auth/AuthShell'
+import {
+  authCardClass,
+  authHeadingClass,
+  authIconBadgeClass,
+  authInputClass,
+  authInputIconClass,
+  authLabelClass,
+  authLinkSoftClass,
+  authLinkStrongClass,
+  authMutedClass,
+  useWallpaperTheme,
+} from '@/components/auth/WallpaperTheme'
 import { SplashScreen } from '@/components/auth/AuthGuard'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -28,6 +40,8 @@ import { useAuth } from '@/hooks/useAuth'
 
 export default function ResetPasswordPage() {
   const { user, loading, updatePassword, signOut } = useAuth()
+  const { theme } = useWallpaperTheme()
+  const dark = theme === 'dark'
   const router = useRouter()
 
   const [password, setPassword] = useState('')
@@ -67,12 +81,12 @@ export default function ResetPasswordPage() {
   if (!user) {
     return (
       <AuthShell>
-        <div className="mt-6 w-full max-w-sm rounded-3xl border border-rose-100/80 bg-white/85 p-8 text-center shadow-sm backdrop-blur-sm">
-          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-rose-100">
+        <div className={`mt-6 w-full max-w-sm rounded-3xl border p-8 text-center shadow-sm backdrop-blur-sm ${authCardClass(dark)}`}>
+          <div className={`mx-auto flex h-16 w-16 items-center justify-center rounded-full ${authIconBadgeClass(dark)}`}>
             <MailX className="h-8 w-8 text-rose-400" />
           </div>
-          <h2 className="mt-4 text-lg font-semibold text-rose-900">链接无效或已过期</h2>
-          <p className="mt-2 text-sm leading-relaxed text-rose-900/60">
+          <h2 className={`mt-4 text-lg font-semibold ${authHeadingClass(dark)}`}>链接无效或已过期</h2>
+          <p className={`mt-2 text-sm leading-relaxed ${authMutedClass(dark)}`}>
             重置链接只能使用一次，且有效期 1 小时。
             <br />
             请重新发送一封重置邮件试试。
@@ -85,7 +99,7 @@ export default function ResetPasswordPage() {
           </Button>
           <Link
             href="/login"
-            className="mt-3 block text-sm text-rose-400 hover:text-rose-500 hover:underline"
+            className={`mt-3 block text-sm hover:underline ${authLinkSoftClass(dark)}`}
           >
             返回登录
           </Link>
@@ -99,19 +113,19 @@ export default function ResetPasswordPage() {
     <AuthShell>
       <form
         onSubmit={handleSubmit}
-        className="mt-5 w-full max-w-sm space-y-4 rounded-3xl border border-rose-100/80 bg-white/85 p-6 shadow-sm backdrop-blur-sm"
+        className={`mt-5 w-full max-w-sm space-y-4 rounded-3xl border p-6 shadow-sm backdrop-blur-sm ${authCardClass(dark)}`}
       >
-        <h2 className="text-base font-semibold text-rose-900">设置新密码</h2>
-        <p className="text-sm leading-relaxed text-rose-900/60">
+        <h2 className={`text-base font-semibold ${authHeadingClass(dark)}`}>设置新密码</h2>
+        <p className={`text-sm leading-relaxed ${authMutedClass(dark)}`}>
           邮箱验证通过，请为账号 {user.email ?? ''} 设置新密码。
         </p>
 
         <div className="space-y-2">
-          <Label htmlFor="password" className="text-rose-900/70">
+          <Label htmlFor="password" className={authLabelClass(dark)}>
             新密码
           </Label>
           <div className="relative">
-            <KeyRound className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-rose-300" />
+            <KeyRound className={`pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 ${authInputIconClass(dark)}`} />
             <Input
               id="password"
               type="password"
@@ -119,18 +133,18 @@ export default function ResetPasswordPage() {
               placeholder="至少 6 位字符"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="h-12 rounded-xl border-rose-200/70 bg-white/70 pl-10 text-base text-rose-900 placeholder:text-rose-400 focus-visible:border-rose-300 focus-visible:ring-rose-200/70"
+              className={`h-12 rounded-xl pl-10 text-base ${authInputClass(dark)}`}
               required
             />
           </div>
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="confirmPassword" className="text-rose-900/70">
+          <Label htmlFor="confirmPassword" className={authLabelClass(dark)}>
             确认新密码
           </Label>
           <div className="relative">
-            <KeyRound className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-rose-300" />
+            <KeyRound className={`pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 ${authInputIconClass(dark)}`} />
             <Input
               id="confirmPassword"
               type="password"
@@ -138,7 +152,7 @@ export default function ResetPasswordPage() {
               placeholder="再输入一次新密码"
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
-              className="h-12 rounded-xl border-rose-200/70 bg-white/70 pl-10 text-base text-rose-900 placeholder:text-rose-400 focus-visible:border-rose-300 focus-visible:ring-rose-200/70"
+              className={`h-12 rounded-xl pl-10 text-base ${authInputClass(dark)}`}
               required
             />
           </div>
@@ -154,9 +168,9 @@ export default function ResetPasswordPage() {
         </Button>
       </form>
 
-      <p className="mt-6 text-sm text-rose-900/60">
+      <p className={`mt-6 text-sm ${authMutedClass(dark)}`}>
         放弃重置？
-        <Link href="/login" className="ml-1 font-medium text-rose-500 hover:underline">
+        <Link href="/login" className={`ml-1 font-medium hover:underline ${authLinkStrongClass(dark)}`}>
           返回登录
         </Link>
       </p>
