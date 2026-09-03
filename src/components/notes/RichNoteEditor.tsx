@@ -75,6 +75,8 @@ export function RichNoteEditor({ initialHtml, onChange, placeholder = '开始记
         Placeholder.configure({ placeholder }),
       ],
       content: sanitize(initialHtml),
+      // SSR 环境必须显式关闭首帧即时渲染，避免水合不匹配（Tiptap 官方建议）
+      immediatelyRender: false,
       editorProps: {
         attributes: {
           // 排版样式在 globals.css 的 .note-editor 下定义
