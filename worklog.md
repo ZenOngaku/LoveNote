@@ -108,3 +108,25 @@ Stage Summary:
 - 品牌全面更名 LoveNote；认证页壁纸零拼接零重复（整图 cover + 边缘清障方案），四认证页浅色版配色统一
 - 深色版壁纸就绪后：同流程可产出 bg-dark.webp（脚本改 SRC/OUT 即可），AuthShell 换 URL 即可切换
 - 上传目录中的深色小图（176x143）判定为深色版色样，本轮未使用；等用户完整深色壁纸素材
+
+---
+Task ID: 6
+Agent: Z.ai Code (主 Agent)
+Task: ① 接入用户提供的真实 Supabase（URL + sb_publishable_ 新式 key）② 壁纸图案缩小重排（手机上观感自然）③ 用算法把浅色壁纸处理成深色版。
+
+Work Log:
+- 写入 .env.local（NEXT_PUBLIC_SUPABASE_URL + NEXT_PUBLIC_SUPABASE_ANON_KEY=sb_publishable_...），重启 dev server；curl 对照实验确认 key 有效（错误 key → 401 Invalid API key；用户 key → PostgREST PGRST205，认证已通过）
+- 发现用户已在 Supabase 执行 schema.sql：users/couple_relation/notes 三表全部存在（初始探针查错表名 profiles 走了弯路，前端实际用 users），RPC generate_invite_code 返回自定义中文错误「请先登录后再操作」，schema 完整就位
+- 壁纸 v2（scripts/make-bg-light.mjs）：矩形裁块重贴 → 印章内底色与画布有 1~3 色阶差，留矩形鬼影；且触边过滤按簇连坐淘汰了几乎所有土豆
+- 壁纸 v3：改墨迹掩码 alpha（只贴线条像素）→ sharp raw 流水线吞 alpha（模糊后 max=255 的掩码过一次 resize 后 max≤126 甚至归零，图案淡不可见）；debug 探针定位：RGBA 同缩与分通道缩放在 sharp 中均异常
+- 壁纸 v4（最终）：核心管线全部纯 JS —— 线稿掩码(r-b>30) + 连通域 + 小外扩(16px)相交合并 + 包围盒包容合并（保住土豆内部斑点）+ 连通域级触边淘汰(40px) + 孤立碎片过滤(<95px) + 墨迹膨胀4px + 二项式模糊 + 预乘空间面积平均缩放 + source-over 合成；sharp 只做 PNG 解码与 webp 编码
+- 壁纸 v5 修正：去掉宽高交换（非等比压扁变形），碎片过滤阈值提至 max≥95px；最终 21 只印章散布 43 次，1600x2648 129KB，土豆+爆米花线条清晰、图案小而密、零鬼影
+- 深色版（scripts/make-bg-dark.mjs）：纸墨分离重上色 —— 墨量 alpha=clamp((r-b-20)/70)，输出=深可可#2b1a13×(1-a)+奶油#f6e7d4×a；水彩晕圈自动变暖光，图案与浅色版完全一致，105KB
+- 浏览器实测（390x844 + 1280x800）：登录页新壁纸自然、ConfigNotice 消失（真实配置生效）、LoveNote/love@potato.com 保持；登录错误账号 → 真实 Supabase 请求（POST /auth/v1/token 400）+ 中文 toast「邮箱或密码不正确」；注册假域名 → Supabase 拒绝（新项目默认校验邮箱域名），据此给 getErrorMessage 补「email address ... is invalid」中文映射并复测生效；dev.log 全 200 无错误
+- README 更新：文件清单补齐 AuthShell/密码页/public 壁纸/scripts/keep-alive，新增「🎨 壁纸定制（浅色/深色）」章节（切换步骤 + 重新生成方法）；.env.local.example 头部 CoupleNote→LoveNote
+- 清理临时探针脚本与旧 extend-bg-light.mjs；lint 零错误；浏览器已关闭
+
+Stage Summary:
+- 真实 Supabase 已接入且链路实测打通：Auth 登录/注册请求真实到达、错误正确翻译、三表 + RPC + RLS 就位（用户已自行执行 schema.sql，本轮确认无误）
+- 壁纸定稿：浅色小图案密排版上线（手机自然不突兀）；深色版资产已生成待切换（bg-dark.webp + AuthShell 一行换 URL，文字配色需同步做深色统一）
+- 遗留：注册需真实可收件邮箱（Supabase 新项目默认拒无 MX 域名）；深色版切换涉及文字/输入框深色统一，等用户确认后实施

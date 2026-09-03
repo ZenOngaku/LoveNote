@@ -59,6 +59,7 @@ export function getErrorMessage(err: unknown): string {
     [/user already registered/i, '该邮箱已被注册，请直接登录'],
     [/signups not allowed/i, '当前不允许注册新用户，请联系管理员开启'],
     [/at least 6 characters/i, '密码至少需要 6 位字符'],
+    [/email address .+ is invalid/i, '邮箱地址无效或不存在，请使用可正常收件的常用邮箱'],
     [/valid email/i, '请输入正确的邮箱地址'],
     [/row-level security|permission denied/i, '没有权限执行该操作，请检查是否已登录或已绑定'],
     [/duplicate key/i, '数据重复：该记录已存在'],
