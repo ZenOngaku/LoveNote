@@ -149,6 +149,9 @@ npm run dev
 - [ ] 未登录直接访问 `/notes`、`/settings`，自动跳回 `/login`
 - [ ] 已登录访问 `/login`，自动跳回首页
 - [ ] 退出登录后回到登录页
+- [ ] 登录页「忘记密码？」→ 输入邮箱 → 收到重置邮件 → 点击链接 → 设置新密码成功
+- [ ] 重置后用旧密码登录被拒绝、新密码登录成功
+- [ ] 重置链接二次使用 / 直接过期访问 `/reset-password`，显示「链接无效或已过期」
 
 **B. 情侣配对**
 
@@ -191,6 +194,8 @@ npm run dev
 | --- | --- | --- |
 | 邮箱验证 | Authentication → Sign In / Providers → Email | 开发调试建议**关闭 Confirm email**（注册即可直接登录）；开启则注册后需去邮箱点击确认链接 |
 | 邮箱速率 | Authentication → Rate Limits | 测试频繁收不到验证邮件时可将发送频率调高 |
+| 站点地址 | Authentication → URL Configuration → Site URL | 设为你的站点根地址（本地开发默认 `http://localhost:3000` 即可，其子路径如 `/reset-password` 自动允许） |
+| 重定向白名单 | Authentication → URL Configuration → Redirect URLs | **部署到线上后必须把生产域名加入**（如 `https://your-domain.com`），否则注册验证邮件 / 密码重置邮件的链接无法跳回你的站点 |
 
 ## ☁️ 部署上线（可选）
 
@@ -222,6 +227,9 @@ A: 检查 `supabase/schema.sql` 第七节是否执行成功（Database → Repli
 
 **Q: 提示「网络异常，请检查网络连接与 Supabase 配置」？**
 A: 检查 `.env.local` 是否已正确填写并以 `npm run dev` 重新启动。
+
+**Q: 点了重置邮件里的链接，页面提示「链接无效或已过期」？**
+A: 重置链接默认只有 1 小时有效期且只能使用一次；另外请确认链接打开的域名已在 Supabase → Authentication → URL Configuration 的 Redirect URLs 白名单里（本地 `http://localhost:3000` 默认允许，线上域名需手动添加）。
 
 **Q: 可以放进微信 web-view 小程序壳吗？**
 A: 可以。应用为纯响应式 H5，已适配安全区域与数字键盘（`inputMode="numeric"`）；将构建后的站点域名配置到 web-view 业务域名白名单即可。

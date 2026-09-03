@@ -44,3 +44,24 @@ Stage Summary:
 - 本轮为「独立复验」：静态检查 + 浏览器端到端全部通过，未发现新缺陷
 - 沙箱边界（诚实声明）：无法验证真实 Supabase 数据流（Auth 会话/RLS 越权/Realtime 推送/双账号配对），需用户配置凭据后按 README 验收清单执行；UI 全部可达路径与错误分支已实测
 - 验证方法沉淀：注入 sb-<ref>-auth-token 伪造会话可在未配置 Supabase 时走通全部登录态 UI 路径
+
+---
+Task ID: 3
+Agent: Z.ai Code (主 Agent)
+Task: 补齐密码重置功能（忘记密码 → 邮件 → 设置新密码 全流程），并顺带修复 .env.local.example 缺失问题。
+
+Work Log:
+- 发现并修复交付缺口：README/ConfigNotice 引用的 .env.local.example 实际不存在（Task 1 遗漏），已补写完整模板（含安全说明：anon key 可公开、service_role 不可放前端）
+- 新增 src/components/auth/AuthShell.tsx：认证页统一外壳（粉渐变 + Logo + 标语），AuthForm 重构复用（视觉零变化，移除内联重复布局与未使用的 Heart 导入）
+- 扩展 useAuth.tsx：resetPassword(email)（resetPasswordForEmail + redirectTo=/reset-password）、updatePassword(pwd)（auth.updateUser），接口风格与既有 OpResult 一致，错误统一走 getErrorMessage 中文翻译
+- 新增 /forgot-password 页：邮箱校验 → 发送重置邮件 → 切换「邮件已发送」提示视图（含重新发送入口 + 返回登录）
+- 新增 /reset-password 三态页面：loading（邮件凭证自动校验中）→ 无会话显示「链接无效或已过期」（重新发送引导）→ 有会话显示新密码表单（双次确认，成功后 signOut 清临时会话并跳登录页）；刻意不用 PublicOnly 守卫避免邮件落地被重定向
+- AuthForm 登录模式密码 Label 右侧加「忘记密码？」链接
+- README：验收清单 A 组 +3 条密码重置用例；Supabase 配置表补 Site URL / Redirect URLs 两行（线上部署必配）；FAQ 新增重置链接失效排查
+- 验证：bun run lint 零输出；tsc --noEmit src/ 零错误；agent-browser 实测：登录页出现忘记密码链接 ✅、/forgot-password 表单渲染与失败 toast（URL 未误切视图）✅、无会话直接访问 /reset-password 显示失效页 ✅、「重新发送」按钮跳回 forgot-password 闭环 ✅、dev.log 新页面全部 200 无报错 ✅
+
+Stage Summary:
+- 密码重置全流程代码完成：login → forgot-password →（邮箱）→ reset-password → 用新密码登录
+- 新增文件：.env.local.example、src/components/auth/AuthShell.tsx、src/app/forgot-password/page.tsx、src/app/reset-password/page.tsx
+- 修改文件：useAuth.tsx、AuthForm.tsx、README.md、worklog.md
+- 沙箱边界：发送邮件与真实改密需用户配置 Supabase 后在验收清单 A 组逐条验证；页面三态与错误分支已全部实测

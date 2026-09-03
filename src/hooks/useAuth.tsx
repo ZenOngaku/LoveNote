@@ -40,6 +40,10 @@ interface AuthContextValue {
   signOut: () => Promise<void>
   /** 修改昵称（写入 users 扩展表） */
   updateNickname: (nickname: string) => Promise<OpResult>
+  /** 发送密码重置邮件 */
+  resetPassword: (email: string) => Promise<OpResult>
+  /** 设置新密码（重置邮件链接落地后使用） */
+  updatePassword: (newPassword: string) => Promise<OpResult>
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null)
@@ -129,6 +133,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await getSupabase().auth.signOut()
   }, [])
 
+  /**
+   * 发送密码重置邮件（含一次性链接，默认 1 小时有效）。
+   * 用户在邮箱中点击链接后会跳转到 /reset-password 设置新密码。
+   */
+  const resetPassword = useCallback(async (email: string): Promise<OpResult> => {
+    const { error } = await getSupabase().auth.resetPasswordForEmail(email.trim(), {
+      // 重置邮件里「设置新密码」按钮的回跳地址
+      redirectTo: `${window.location.origin}/reset-password`,
+    })
+    return { error: error ? getErrorMessage(error) : null }
+  }, [])
+
+  /**
+   * 设置新密码（需已登录会话）。
+   * 用于 /reset-password 页：用户点击邮件链接后 Supabase 会自动建立临时会话。
+   */
+  const updatePassword = useCallback(async (newPassword: string): Promise<OpResult> => {
+    const { error } = await getSupabase().auth.updateUser({ password: newPassword })
+    return { error: error ? getErrorMessage(error) : null }
+  }, [])
+
   /** 修改昵称 */
   const updateNickname = useCallback(
     async (nickname: string): Promise<OpResult> => {
@@ -146,7 +171,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   return (
     <AuthContext.Provider
-      value={{ user, profile, loading, signIn, signUp, signOut, updateNickname }}
+      value={{
+        user,
+        profile,
+        loading,
+        signIn,
+        signUp,
+        signOut,
+        updateNickname,
+        resetPassword,
+        updatePassword,
+      }}
     >
       {children}
     </AuthContext.Provider>

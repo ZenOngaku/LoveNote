@@ -16,7 +16,8 @@ import { useState, type FormEvent } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
-import { Heart, Loader2, Lock, Mail } from 'lucide-react'
+import { Loader2, Lock, Mail } from 'lucide-react'
+import { AuthShell } from '@/components/auth/AuthShell'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -87,8 +88,8 @@ export function AuthForm({ mode }: AuthFormProps) {
   // 注册后等待邮箱验证的提示页
   if (needsVerify) {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-b from-rose-50 via-[#FFF7F8] to-white px-6 py-10">
-        <div className="w-full max-w-sm rounded-3xl border border-rose-100 bg-white p-8 text-center shadow-sm">
+      <AuthShell>
+        <div className="mt-6 w-full max-w-sm rounded-3xl border border-rose-100 bg-white p-8 text-center shadow-sm">
           <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-rose-100">
             <Mail className="h-8 w-8 text-rose-400" />
           </div>
@@ -104,19 +105,12 @@ export function AuthForm({ mode }: AuthFormProps) {
             去登录
           </Button>
         </div>
-      </div>
+      </AuthShell>
     )
   }
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-b from-rose-50 via-[#FFF7F8] to-white px-6 py-10">
-      {/* Logo 与标语 */}
-      <div className="flex h-16 w-16 items-center justify-center rounded-full bg-rose-100 shadow-sm">
-        <Heart className="h-8 w-8 fill-rose-300 text-rose-400" />
-      </div>
-      <h1 className="mt-4 text-2xl font-bold tracking-wide text-stone-800">CoupleNote</h1>
-      <p className="mt-1 text-sm text-stone-400">属于两个人的小小记事本</p>
-
+    <AuthShell>
       <ConfigNotice />
 
       {/* 表单卡片 */}
@@ -150,9 +144,20 @@ export function AuthForm({ mode }: AuthFormProps) {
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="password" className="text-stone-600">
-            密码
-          </Label>
+          <div className="flex items-center justify-between">
+            <Label htmlFor="password" className="text-stone-600">
+              密码
+            </Label>
+            {/* 登录模式提供忘记密码入口 */}
+            {isLogin && (
+              <Link
+                href="/forgot-password"
+                className="text-xs text-rose-400 hover:text-rose-500 hover:underline"
+              >
+                忘记密码？
+              </Link>
+            )}
+          </div>
           <div className="relative">
             <Lock className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-stone-300" />
             <Input
@@ -218,6 +223,6 @@ export function AuthForm({ mode }: AuthFormProps) {
           </>
         )}
       </p>
-    </div>
+    </AuthShell>
   )
 }
