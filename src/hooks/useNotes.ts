@@ -6,7 +6,7 @@
  * ============================================================
  * 功能：
  * 1. 按类型加载笔记列表（shared 共享 / private 私人），按最后修改时间倒序
- * 2. 新建 / 编辑 / 删除笔记（文档级同步：保存后写库，由 Realtime 通知对方刷新）
+ * 2. 新建 / 编辑 / 删除 / 类型转换（共享 ⇄ 私人）笔记
  * 3. Realtime 监听 notes 表：任意一方修改笔记，双方页面自动刷新到最新内容
  *
  * 同步策略（第一版文档级同步，无多人光标）：
@@ -150,6 +150,31 @@ export function useNotes(noteType: NoteType, coupleId: string | null) {
     [loadNotes],
   )
 
+  /**
+   * 转换笔记类型（共享 ⇄ 私人）：
+   * - 转共享：必须已绑定情侣，couple_id 写入当前共享空间（RLS + 表约束双重校验）
+   * - 转私人：couple_id 置空，仅本人可见
+   * 转换后重拉当前 Tab 列表（笔记会从当前列表消失、出现在另一个 Tab）；
+   * 共享笔记的转换会经 Realtime 通知对方刷新。
+   */
+  const convertNoteType = useCallback(
+    async (note: Note): Promise<OpResult> => {
+      const toShared = note.note_type === 'private'
+      if (toShared && !coupleId) {
+        return { error: '尚未绑定情侣，无法转为共享笔记' }
+      }
+      const patch = toShared
+        ? { note_type: 'shared', couple_id: coupleId }
+        : { note_type: 'private', couple_id: null }
+      const { error } = await getSupabase().from('notes').update(patch).eq('id', note.id)
+      if (error) return { error: getErrorMessage(error) }
+      const result = await loadNotes()
+      if (result) setNotes(result)
+      return { error: null }
+    },
+    [coupleId, loadNotes],
+  )
+
   /** 删除笔记（RLS 保证：私人仅本人可删，共享仅情侣双方可删） */
   const removeNote = useCallback(async (id: string): Promise<OpResult> => {
     const { error } = await getSupabase().from('notes').delete().eq('id', id)
@@ -159,5 +184,5 @@ export function useNotes(noteType: NoteType, coupleId: string | null) {
     return { error: null }
   }, [])
 
-  return { notes: visibleNotes, loading, ready, createNote, updateNote, removeNote }
+  return { notes: visibleNotes, loading, ready, createNote, updateNote, convertNoteType, removeNote }
 }

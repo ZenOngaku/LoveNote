@@ -22,6 +22,7 @@ import { AppShell } from '@/components/layout/AppShell'
 import { NoteTabs } from '@/components/notes/NoteTabs'
 import { NoteList } from '@/components/notes/NoteList'
 import { NoteEditorFullScreen } from '@/components/notes/NoteEditorFullScreen'
+import { NoteActionSheet } from '@/components/notes/NoteActionSheet'
 import { ConfirmDialog } from '@/components/notes/ConfirmDialog'
 import { Button } from '@/components/ui/button'
 import { useAuth } from '@/hooks/useAuth'
@@ -49,11 +50,15 @@ function NotesContent() {
   const coupleId = isBound && relation ? relation.id : null
 
   // 笔记数据与操作（Realtime 在 hook 内部订阅）
-  const { notes, loading, createNote, updateNote, removeNote } = useNotes(noteType, coupleId)
+  const { notes, loading, createNote, updateNote, convertNoteType, removeNote } = useNotes(
+    noteType,
+    coupleId,
+  )
 
   // 全屏编辑页状态：editingNote 为 null 时未打开
   const [editingNote, setEditingNote] = useState<Note | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<Note | null>(null) // 删除确认弹窗对象
+  const [actionNote, setActionNote] = useState<Note | null>(null) // 长按操作面板对象
   const [creating, setCreating] = useState(false) // 新建请求进行中（防连点重复建）
 
   /** 新建：立即创建空白笔记并全屏打开（Apple 备忘录式） */
@@ -108,6 +113,18 @@ function NotesContent() {
     return true
   }
 
+  /** 长按面板：转换共享 ⇄ 私人（成功后笔记会移动到另一个 Tab） */
+  async function handleConvertType(note: Note) {
+    setActionNote(null)
+    const toShared = note.note_type === 'private'
+    const { error } = await convertNoteType(note)
+    if (error) {
+      toast.error(error)
+      return
+    }
+    toast.success(toShared ? '已转为共享笔记，TA 也能看到了 💗' : '已转为私人笔记，仅自己可见')
+  }
+
   const partnerName = partner?.nickname ?? null
 
   return (
@@ -122,6 +139,7 @@ function NotesContent() {
           currentUserId={user?.id ?? null}
           partnerName={partnerName}
           onEdit={openEdit}
+          onLongPress={setActionNote}
           emptyState={
             noteType === 'shared' && !coupleId ? (
               /* 共享 Tab 但尚未绑定情侣 */
@@ -185,7 +203,19 @@ function NotesContent() {
         )}
       </AnimatePresence>
 
-      {/* 删除笔记二次确认弹窗 */}
+      {/* 长按笔记卡片弹出的操作面板（转换类型 / 删除） */}
+      <NoteActionSheet
+        note={actionNote}
+        isBound={!!coupleId}
+        onConvertType={(n) => void handleConvertType(n)}
+        onDelete={(n) => {
+          setActionNote(null)
+          setDeleteTarget(n)
+        }}
+        onClose={() => setActionNote(null)}
+      />
+
+      {/* 删除笔记二次确认弹窗（编辑页删除按钮 / 长按面板删除共用） */}
       <ConfirmDialog
         open={!!deleteTarget}
         onOpenChange={(o) => !o && setDeleteTarget(null)}

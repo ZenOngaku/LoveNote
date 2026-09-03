@@ -22,9 +22,9 @@ export function AppShell({ title, children }: AppShellProps) {
   return (
     <div className="min-h-screen bg-gradient-to-b from-rose-50 via-[#FFF7F8] to-white">
       <div className="mx-auto flex min-h-screen w-full max-w-md flex-col">
-        {/* 顶部标题栏 */}
+        {/* 顶部标题栏（标题水平居中） */}
         <header className="sticky top-0 z-20 border-b border-rose-100/80 bg-white/70 backdrop-blur-md">
-          <div className="flex h-14 items-center px-5">
+          <div className="flex h-14 items-center justify-center px-5">
             <h1 className="text-base font-semibold text-stone-800">{title}</h1>
           </div>
         </header>
