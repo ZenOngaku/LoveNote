@@ -10,6 +10,12 @@
  *     点阵间距 290 → 210（密度约 ×1.9），抖动同步收敛到 ±10px，
  *     斜向点阵与土豆/爆米花棋盘交替保持不变。
  *
+ * v8：用户反馈「壁纸右侧存在较大空白」→ 根因是点阵锚定在原点，
+ *     最大列号的点落进「MARGIN 边界 + 印章半宽」都容不下的死区，
+ *     整列被拒（该列又恰是最大的土豆）→ 右缘空出约 200px。修复：
+ *     点阵 span 居中到能容纳最大印章的区域内，四边对称；越界改为
+ *     向内收拢而非整只拒绝。
+ *
  * 踩坑记录（为什么核心管线全部手写）：
  *   · v2 裁矩形色块当印章 → 印章内底色与画布有 1~3 色阶差，留下矩形鬼影
  *   · v3 用 sharp 对 raw 像素做 blur/resize/composite → 掩码 alpha 在
@@ -211,15 +217,34 @@ for (let i = 0; i < CANVAS_W * CANVAS_H; i++) {
 const LATTICE_D = 210 // 相邻点间距（画布像素）—— 越小越密（v7: 290→210）
 const STEP = LATTICE_D / Math.SQRT2
 const JITTER = 10 // 轻微抖动，打破机械感但保持斜向可读（随间距同步收敛）
+
+// v8 点阵 span 居中：外侧列/行必须留出「最大印章半宽 + 抖动」的落位
+// 余量，否则靠边列会系统性放不下印章 → 画布一侧出现空带。
+// HALF_W/H 取「最大印章盒 × 最大缩放 ÷ 2 + 抖动」，下方有运行时日志校验；
+// colCount 为奇数时首尾两列同为 k 偶 → 都是土豆列，左右推得一样远，对称。
+const HALF_W_BOUND = 140
+const HALF_H_BOUND = 95
+const CX0 = MARGIN + HALF_W_BOUND
+const CX1 = CANVAS_W - MARGIN - HALF_W_BOUND
+const CY0 = MARGIN + HALF_H_BOUND
+const CY1 = CANVAS_H - MARGIN - HALF_H_BOUND
+const colCount = Math.floor((CX1 - CX0) / STEP) + 1
+const rowCount = Math.floor((CY1 - CY0) / STEP) + 1
+const xShift = (CX1 - CX0 - (colCount - 1) * STEP) / 2
+const yShift = (CY1 - CY0 - (rowCount - 1) * STEP) / 2
 const points = []
-const kMax = Math.floor((CANVAS_W - MARGIN) / STEP)
-const mMax = Math.floor((CANVAS_H - MARGIN) / STEP)
-for (let k = 1; k <= kMax; k++) {
-  for (let m = 1; m <= mMax; m++) {
+for (let k = 0; k < colCount; k++) {
+  for (let m = 0; m < rowCount; m++) {
     if ((k + m) % 2 !== 0) continue // 菱形点阵只取同奇偶格点
-    points.push({ x: k * STEP, y: m * STEP, type: k % 2 === 0 ? 'potato' : 'popcorn' })
+    points.push({ x: CX0 + xShift + k * STEP, y: CY0 + yShift + m * STEP, type: k % 2 === 0 ? 'potato' : 'popcorn' })
   }
 }
+// 界限校验：最大印章在最大缩放下的半宽/半高不得超过上述 span 余量
+const maxStampW = Math.max(...stampImages.map((s) => s.w))
+const maxStampH = Math.max(...stampImages.map((s) => s.h))
+console.log(
+  `最大印章盒 ${maxStampW}x${maxStampH} → 半宽 ${Math.round((maxStampW * SCALE_MAX) / 2) + JITTER}（界限 ${HALF_W_BOUND}）/ 半高 ${Math.round((maxStampH * SCALE_MAX) / 2) + JITTER}（界限 ${HALF_H_BOUND}）`,
+)
 // 打散同类型内部取章顺序（不同点同类不重复同一只）
 for (let i = points.length - 1; i > 0; i--) {
   const j = Math.floor(rand() * (i + 1))
@@ -354,9 +379,10 @@ for (const pt of points) {
     for (const scale of [SCALE_MAX, (SCALE_MAX + SCALE_MIN) / 2, SCALE_MIN]) {
       const dw = Math.max(1, Math.round(st.w * scale))
       const dh = Math.max(1, Math.round(st.h * scale))
-      const x = Math.round(pt.x + (rand() - 0.5) * JITTER * 2 - dw / 2)
-      const y = Math.round(pt.y + (rand() - 0.5) * JITTER * 2 - dh / 2)
-      if (x < MARGIN || y < MARGIN || x + dw > CANVAS_W - MARGIN || y + dh > CANVAS_H - MARGIN) continue
+      // 越界时向画布内收拢（而非整只拒绝）：span 居中后最多收拢几十 px，
+      // 不影响斜向观感，却能保证边缘列不会被系统性清空
+      const x = Math.min(CANVAS_W - MARGIN - dw, Math.max(MARGIN, Math.round(pt.x + (rand() - 0.5) * JITTER * 2 - dw / 2)))
+      const y = Math.min(CANVAS_H - MARGIN - dh, Math.max(MARGIN, Math.round(pt.y + (rand() - 0.5) * JITTER * 2 - dh / 2)))
       if (hits(x, y, dw, dh)) continue
       stampAt(st, x, y, dw, dh, rand() < 0.5) // 水平镜像增加变奏（线条图案无方向性）
       placed.push({ x, y, w: dw, h: dh })
