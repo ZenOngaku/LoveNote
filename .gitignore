@@ -52,3 +52,5 @@ prompt
 server.log
 # Skills directory
 /skills/
+# 沙箱脚本（本机开发辅助，不属于项目交付物）
+.zscripts

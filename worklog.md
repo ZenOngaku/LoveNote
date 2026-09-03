@@ -241,3 +241,35 @@ Stage Summary:
 - 笔记编辑全面升级：全屏编辑页 + Tiptap 富文本 + 自动保存 + 空笔记自动清理；数据库与 Realtime 架构零改动，历史纯文本笔记无缝兼容（可编辑可展示）
 - 新依赖：@tiptap/*@^2、dompurify；删除 NoteEditorModal.tsx
 - 经验：Supabase 免费版确认邮件限流会卡死自动化注册验证——测试验证要么用已确认账号，要么在 Supabase 后台临时关闭 Confirm email
+
+---
+Task ID: 13
+Agent: Z.ai Code (主 Agent)
+Task: （回填）修复「待办勾选框与文字不在同一行」；答复双人远程共用方案。
+
+Work Log:
+- 用户反馈富文本待办清单的勾选框与文字换行错位。逐层排查：磁盘上的 globals.css 排版规则正确、lightningcss 可独立解析无语法错误，最终用「浏览器遍历 document.styleSheets 检索目标选择器」定位——编译产物中整个排版块 0 命中，判定为 Turbopack CSS 增量编译腐化（磁盘源码正确但增量产物停留在旧版本，追加哨兵规则也不进产物），并非样式代码缺陷
+- 修复：按 PID 清杀旧 dev server 进程树 → 删除 .next 缓存 → 用沙箱规范脚本干净重启（此前两次用 setsid nohup 手动拉起均约 20 秒静默死亡且无日志，规范脚本稳定）；重启后编译产物即时包含全部新规则
+- 浏览器实测：列表项 display flex 生效，勾选框与文字同排且垂直居中；勾选切换、防抖自动保存（保存内容带 Tiptap taskItem 标记属性）、列表「待办 n/m」徽章全部正常；lint 零错误
+- 答复双人远程共用：数据全部在 Supabase 云端，本地无需跑任何服务；同一网络直接用局域网 IP 访问 dev server，跨网络推荐部署 Vercel（最稳）或临时用 cloudflared/ngrok 隧道暴露本机
+
+Stage Summary:
+- 方法论沉淀：「样式莫名失效」先用浏览器遍历 styleSheets 检索选择器确认编译产物，再怀疑代码；Turbopack 长时间增量运行可能腐化 CSS 产物，清缓存干净重启是正确处置，不要盲目改样式代码
+- dev server 必须用沙箱规范脚本启动，setsid nohup 方式会静默死亡
+
+---
+Task ID: 14
+Agent: Z.ai Code (主 Agent)
+Task: 落地并验证三项 UI 修改（① 页头标题居中 ② 笔记卡片长按菜单：共享⇄私人互转 + 删除二次确认 ③ 页脚「你们」改「我们」）；重新打包 VS Code 迁移 zip；解答本地 VS Code 使用 / GitHub 推送 / 预览方式。
+
+Work Log:
+- 排查发现三项修改的代码在上轮工具故障前已落盘：AppShell 页头改独立行绝对居中；新增 useLongPress（PointerEvent 500ms 计时、移动 10px 取消、触发后抑制 click、震动反馈、桌面右键等价）与 NoteActionSheet（底部滑出面板：转换类型 + 删除，未绑定情侣时「转共享」禁用并说明）；useNotes 新增 convertNoteType（转共享写 couple_id、转私人置空，转换后重拉列表）；notes 页把长按删除接入 ConfirmDialog 二次确认；设置页页脚文案已为「愿我们」——用户看不到是因为本地 zip 打包早于这些改动
+- 用 Python Playwright（add_init_script 在应用代码前注入伪造会话 + fetch 补丁，全程不打真实数据库）做 19 项端到端断言：四个页面标题水平居中（偏差≤0.01px）、长按弹面板、私人转共享后私人列表清空且共享 Tab 双卡、删除弹二次确认后列表只剩一条、共享转私人反向同理、单击仍进全屏编辑页、设置页页脚文案、首页对方昵称显示；19/19 通过，console 零意外错误
+- 调试踩坑三连：PostgREST 过滤参数是「字段=eq.值」形式，mock 需剥前缀；新版 postgrest-js 的 maybeSingle 不再发 object Accept 头、改为客户端取数组首元素；mock 脚本重写时漏声明一个变量导致对方资料查询抛引用错误（表现为资料回退「TA」）——用请求日志探针定位
+- CLI 版 agent-browser 注入补丁存在时序竞争（无 addInitScript 能力、storage 事件被会话去重拦截），最终弃用改走 Playwright；验证管线脚本留存于沙箱 .zscripts 供复用（已加入 gitignore，不进仓库与 zip）
+- 重新打包迁移 zip（保持旧包结构：含 .git 仓库、.env.local、示例与壁纸生成脚本；排除 node_modules/.next/tests/skills/沙箱脚本），同步更新 download/ 与 public/ 两份；提交 git 后打包保证包内仓库状态与工作区一致
+
+Stage Summary:
+- 三项 UI 修改确认上线并全量回归通过；长按交互与既有点击进编辑页互不干扰
+- 迁移包已含全部新功能，用户重新下载解压即可；包内自带 git 历史与可运行配置
+- 经验：浏览器自动化验证 Supabase 应用时，Playwright add_init_script 注入 mock 是最可靠路径；mock 必须完整模拟 PostgREST 的 URL 语义（eq. 过滤、数组响应、客户端解包）
