@@ -1,0 +1,35 @@
+# ============================================================
+# Supabase 免费项目保活定时任务
+# ============================================================
+# 背景：Supabase 免费版项目若连续 7 天没有任何 API 请求会被自动
+#       暂停（paused）。本项目只要日常使用就不会触发；这个
+#       workflow 是给「偶尔长期不用」的场景兜底的。
+#
+# 使用方法：
+#   1. 把本项目推送到 GitHub 仓库
+#   2. 仓库 Settings → Secrets and variables → Actions → New repository secret
+#      - 添加 SUPABASE_URL      （值 = 你的 Project URL）
+#      - 添加 SUPABASE_ANON_KEY （值 = 你的 anon public key）
+#   3. 完成。此后每 2 天自动 ping 一次数据库接口保活
+#      （也可在本页面 Run workflow 手动触发测试）
+#
+# 安全说明：anon key 是公开客户端密钥，放入 GitHub Secrets 安全。
+
+name: Keep Supabase Alive
+
+on:
+  schedule:
+    # 每 2 天 UTC 3:00（北京时间 11:00）执行一次
+    - cron: '0 3 */2 * *'
+  workflow_dispatch: # 支持在 Actions 页面手动触发
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Supabase REST API
+        run: |
+          curl -sf "${{ secrets.SUPABASE_URL }}/rest/v1/" \
+            -H "apikey: ${{ secrets.SUPABASE_ANON_KEY }}" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}" \
+            --max-time 30

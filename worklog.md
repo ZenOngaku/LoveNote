@@ -65,3 +65,23 @@ Stage Summary:
 - 新增文件：.env.local.example、src/components/auth/AuthShell.tsx、src/app/forgot-password/page.tsx、src/app/reset-password/page.tsx
 - 修改文件：useAuth.tsx、AuthForm.tsx、README.md、worklog.md
 - 沙箱边界：发送邮件与真实改密需用户配置 Supabase 后在验收清单 A 组逐条验证；页面三态与错误分支已全部实测
+
+---
+Task ID: 4
+Agent: Z.ai Code (主 Agent)
+Task: ① 回应 Supabase 免费版 pause 问题（含保活落地方案）② placeholder 改为 love@potato.com ③ 用户提供的土豆花纹图用作认证页背景（裁水印 + 无缝平铺扩展）。
+
+Work Log:
+- 图片处理（sharp）：原上传图 1600x2848、底色 #fdfdf1、右下角有「豆包AI生成」水印
+  - 第一版：裁掉底部 200px 水印带 → 800 宽 webp tile（59KB）；浏览器实测桌面端发现 x≈1040 处竖直接缝错位（原图非精确四方连续）
+  - 第二版（最终）：壁纸业标准镜像法——裁水印 + 600 宽基准 + flop/flip/双镜像拼成 2x2 大 tile（1200x1986，public/pattern.webp），接缝处互为镜像天然无缝
+- AuthShell 背景：粉色渐变改为 pattern.webp 平铺 + bg-[length:780px_auto]（保持元素视觉密度）+ 底色 #fdfdf1 匹配；四个认证页（登录/注册/忘记密码/重置密码）统一生效
+- placeholder：AuthForm + forgot-password 两处 you@example.com → love@potato.com
+- 新增 .github/workflows/keep-alive.yml：GitHub Actions 每 2 天 ping Supabase REST API 防免费项目 7 天闲置暂停；README 无需凭据即可先行合入，用户配置 Secrets 后生效
+- 验证：桌面 1280x800 与移动 390x844 截图目检——平铺无缝 ✅、无水印 ✅、表单可读性 ✅、placeholder 生效 ✅；镜像拼合意外产出心形土豆图案，契合情侣主题；lint 零错误
+- 清理临时截图；浏览器已关闭
+
+Stage Summary:
+- 认证页视觉升级为用户自定义土豆花纹背景（裁水印 + 镜像无缝平铺），placeholder 统一为 love@potato.com
+- 交付保活方案：日常使用即保活 + GitHub Actions 每 2 天自动 ping 兜底（.github/workflows/keep-alive.yml，用户配置 SUPABASE_URL / SUPABASE_ANON_KEY 两个 Secrets 即可）
+- Supabase 平台建议：免费版 + 保活即可长期用（情侣日常使用天然保活）；付费 $25/月免 pause；彻底自主需自托管（VPS + PocketBase/自托管 Supabase，成本与运维上升，不建议当前阶段迁移）

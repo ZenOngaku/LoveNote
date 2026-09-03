@@ -133,7 +133,7 @@ export function AuthForm({ mode }: AuthFormProps) {
               type="email"
               inputMode="email"
               autoComplete="email"
-              placeholder="you@example.com"
+              placeholder="love@potato.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               // 16px 字号避免 iOS 聚焦时页面自动缩放
