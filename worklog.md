@@ -143,7 +143,7 @@ Work Log:
 - 深浅切换架构：新建 src/components/auth/WallpaperTheme.tsx —— useSyncExternalStore 订阅 localStorage（key lovenote-wallpaper-theme），SSR/水合期固定浅色避免错配，不违反 react-hooks/set-state-in-effect；toggle 写存储 + 通知监听者，storage 事件跨标签页同步；导出 9 个配色构建器（卡片/输入框/标题/Label/链接/图标）集中维护深浅两版样式
 - AuthShell：根容器按主题切换壁纸 URL 与底色（bg-light/#fdfbee ↔ bg-dark/#2b1a13）+ 右上角月亮/太阳切换按钮（44px 触达）；SplashScreen 底色跟随已存主题
 - AuthForm（登录/注册/验证提示三视图）、forgot-password、reset-password（失效提示/新密码表单）全部换用主题构建器，深色版卡片 #3a241a/85、输入白 10%、文字 rose-50/100 系
-- 踩坑：JSX 三元里写 bg-[url(\'/bg-dark.webp\')] 的转义反斜杠被 Tailwind 扫描器吞进类名，生成畸形 CSS 报 Module not found；改为双引号 bg-[url("/bg-dark.webp")] 并清 .next 缓存重启解决
+- 踩坑（重要，已两次复发）：壁纸背景图禁止使用 Tailwind 带引号的 url 任意值类——类名经 Tailwind v4 + Next CSS 管线生成畸形规则，css-loader 把引号并进路径报 Module not found；且类名原文一旦写进任何被扫描的文件（含本 markdown 日志，v4 自动内容检测会扫所有非 gitignore 文件）就会复发（Task 7 收尾把踩坑原文追加进本文件，用户预览即复发）。定论：背景图一律内联 style 指定；文档/日志中只做文字描述，绝不出现类名原文
 - MultiEdit 非原子教训：一条 old_str 不匹配时前面编辑仍会落盘（AuthForm import 被插重两次），已清理并改用单 Edit 逐段核对
 - 验证：bun run lint 零错误、tsc src/ 零错误；agent-browser 实测 390x844 + 1280x800：浅色斜向点阵自然、点按钮切深色全套（壁纸/卡片/输入框/按钮/图标）即刻生效、刷新持久化（storage 确认 dark）、跨页保持、往返切回正常；登录错误账号仍返回真实 Supabase 错误中文 toast；console 无报错、dev.log 全 200
 - README：文件清单与「🎨 壁纸定制」章节更新（内置切换说明 + LATTICE_D 调参）；清理调试打印；浏览器已关闭
@@ -152,3 +152,19 @@ Stage Summary:
 - 壁纸定稿斜向点阵版：对角对齐 + 棋盘交替均匀分布，浅深两版同构（深版由浅版自动重上色）
 - 深色版从「资产」升级为「完整主题」：四认证页一键切换、持久化、跨标签同步，用户可随时自选
 - 全部源码 lint/tsc 零错误，浏览器端到端验证通过
+
+---
+Task ID: 8
+Agent: Z.ai Code (主 Agent)
+Task: 修复用户预览页构建错误（Module not found: 壁纸文件名带引号）。
+
+Work Log:
+- 定位：Tailwind v4 自动内容检测会扫描所有非 gitignore 文件（含 markdown）；Task 7 收尾时把「带引号的壁纸背景图任意值类」原文写进了本日志，重新编译时被当作候选类名生成畸形 CSS 规则，css-loader 把引号并进资源路径报 Module not found——这正是「Task 7 当时验证通过、用户之后打开预览却报错」的原因（追加日志在验证之后）
+- 修复一：全局 rg 排查（排除 node_modules/.next），确认类名原文只存在于 AuthShell.tsx 与本日志第 146 行；AuthShell 改为内联 style 指定壁纸 URL（不经过 CSS 生成与模块解析，浏览器运行时按 origin 解析，dev/prod 均稳），底色仍用安全的颜色任意值类，并在文件头注释写明禁止改回任意值类的原因
+- 修复二：本日志第 146 行踩坑记录改写为纯文字描述（Task 7 与 Task 8 条目均不再含任何类名原文），消除扫描源
+- 进程踩坑：按端口 kill 只杀掉持 socket 的部分，上一轮 setsid 的旧进程树残留，与新 server 抢占 .next 致 build-manifest ENOENT 500；按 PID 全量清杀后干净重启解决
+- 验证：编译 GET / 200 零报错；lint 零错误、tsc src/ 零错误（examples/skills 模板目录的既有报错与本项目无关）；agent-browser 390x844 实测——登录页浅色壁纸（内联 style 计算样式确认）→ 点月亮切深色（bg-dark + storage=dark + 卡片/输入框/文字全套深色）→ 刷新保持深色 → /register 自动联动深色 → 再切回浅色（bg-light + storage=light），页面 errors 零输出；dev.log 全 200，且用户预览面板的跨域请求已返回 200（修复对用户实时生效）
+
+Stage Summary:
+- 根因定性：Tailwind v4 扫描范围 = 所有非 gitignore 文件，文档/日志里出现类名原文等同于写在源码里
+- 防复发双保险：壁纸 URL 一律内联 style（AuthShell 头注释已写明）；文档/日志只做文字描述、绝不出现类名原文

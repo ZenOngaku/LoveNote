@@ -13,6 +13,11 @@
  * - 深色：public/bg-dark.webp，深可可底 + 奶油色线条，底色 #2b1a13
  * 两版均为单图 bg-cover bg-center 呈现 —— 无平铺拼接、零接缝，
  * 底色与壁纸底色一致，图片加载前后页面始终同色调。
+ *
+ * ⚠️ 壁纸 URL 必须走内联 style，禁止改成 Tailwind 带引号的背景图
+ * 任意值类：这类类名经 Tailwind v4 + Next 的 CSS 管线会生成畸形规则，
+ * css-loader 把引号并进资源路径报 Module not found；而且类名原文一旦
+ * 出现在任何被 Tailwind 扫描的文件（含 markdown 文档、日志）就会复发。
  */
 import type { ReactNode } from 'react'
 import { Heart } from 'lucide-react'
@@ -24,8 +29,9 @@ export function AuthShell({ children }: { children: ReactNode }) {
   return (
     <div
       className={`relative flex min-h-screen flex-col items-center justify-center bg-cover bg-center px-6 py-10 transition-colors duration-300 ${
-        dark ? 'bg-[#2b1a13] bg-[url("/bg-dark.webp")]' : 'bg-[#fdfbee] bg-[url("/bg-light.webp")]'
+        dark ? 'bg-[#2b1a13]' : 'bg-[#fdfbee]'
       }`}
+      style={{ backgroundImage: `url(${dark ? '/bg-dark.webp' : '/bg-light.webp'})` }}
     >
       {/* 深浅壁纸切换（持久化，四个认证页共用） */}
       <WallpaperToggle />
