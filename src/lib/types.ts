@@ -63,3 +63,8 @@ export interface NoteInput {
 export interface OpResult {
   error: string | null
 }
+
+/** 新建笔记结果：成功时携带创建后的完整笔记行（供立即进入全屏编辑） */
+export interface NoteResult extends OpResult {
+  note: Note | null
+}

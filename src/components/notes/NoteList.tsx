@@ -5,12 +5,14 @@
  * NoteList —— 笔记列表
  * ============================================================
  * - 按最后修改时间倒序展示（排序由查询层完成）
- * - 每项显示：标题 / 内容预览（最多两行）/ 相对时间 / 创建者（共享笔记）
+ * - 每项显示：标题 / 内容预览（富文本提取纯文本，最多两行）/
+ *   相对时间 / 待办进度（含待办清单时）/ 创建者（共享笔记）
  * - 加载中显示骨架屏；空列表显示空状态插画区
- * - 点击卡片进入编辑弹窗
+ * - 点击卡片进入全屏编辑页
  */
+import { ListTodo } from 'lucide-react'
 import { Skeleton } from '@/components/ui/skeleton'
-import { formatRelativeTime } from '@/lib/helpers'
+import { countTodos, formatRelativeTime, noteExcerpt } from '@/lib/helpers'
 import type { Note } from '@/lib/types'
 
 interface NoteListProps {
@@ -22,7 +24,7 @@ interface NoteListProps {
   partnerName?: string | null
   /** 空状态内容（不同 Tab 的空提示不同，由父组件传入） */
   emptyState: React.ReactNode
-  /** 点击笔记卡片 */
+  /** 点击笔记卡片（进入全屏编辑页） */
   onEdit: (note: Note) => void
 }
 
@@ -59,9 +61,11 @@ export function NoteList({
     <ul className="space-y-3">
       {notes.map((note) => {
         const isMine = note.user_id === currentUserId
+        const excerpt = noteExcerpt(note.content)
+        const todos = countTodos(note.content)
         return (
           <li key={note.id}>
-            {/* 整卡可点击，进入编辑弹窗；active 缩放提供触控反馈 */}
+            {/* 整卡可点击，进入全屏编辑页；active 缩放提供触控反馈 */}
             <button
               type="button"
               onClick={() => onEdit(note)}
@@ -81,11 +85,18 @@ export function NoteList({
               </div>
 
               <p className="mt-1.5 line-clamp-2 whitespace-pre-wrap text-sm text-stone-500">
-                {note.content || '暂无内容'}
+                {excerpt || '暂无内容'}
               </p>
 
-              <p className="mt-2.5 text-xs text-stone-400">
-                {formatRelativeTime(note.updated_at)} 修改
+              <p className="mt-2.5 flex items-center gap-2 text-xs text-stone-400">
+                <span>{formatRelativeTime(note.updated_at)} 修改</span>
+                {/* 含待办清单时显示勾选进度 */}
+                {todos && (
+                  <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] text-emerald-600">
+                    <ListTodo className="h-3 w-3" aria-hidden />
+                    待办 {todos.done}/{todos.total}
+                  </span>
+                )}
               </p>
             </button>
           </li>

@@ -220,3 +220,24 @@ Work Log:
 Stage Summary:
 - 壁纸 v9 无限延伸版上线：四边截断 + 任意视口 cover 裁切都看不出边界；布局策略从「限制在安全区内完整摆放」演进为「铺出画布 + 裁剪合成」，这是壁纸类平铺观感的正确做法
 - 经验：碰撞检测必须与「可见性」一致——按原始包围盒判定会让边缘密集区被画布外的不可见部分挤稀
+
+---
+Task ID: 12
+Agent: Z.ai Code (主 Agent)
+Task: 笔记功能升级：点击笔记打开全屏编辑页 + Apple 备忘录式富文本编辑（加粗/下划线/待办清单等）。
+
+Work Log:
+- 技术选型：安装 Tiptap v2 全家桶（react/pm/starter-kit/underline/task-list/task-item/placeholder/highlight，2.27.2）+ dompurify 3.4.14；选 Tiptap 而非已依赖的 mdxeditor 的原因：React 19 兼容明确、工具栏可完全自绘成 Apple 风格、HTML 存储让渲染端简单
+- 数据层零改动：notes.content 本就是 text，直接存 HTML；Realtime 已开启；schema.sql 不动
+- 交互重设计（Apple 备忘录式）：点 FAB 立即创建空白笔记并全屏打开（底部滑入动画 z-50 盖过 BottomNav/FAB）→ 输入停顿 900ms 防抖自动保存 → 返回时 flush 补存 → 关闭时若标题正文全空则静默删除（不留垃圾数据）；旧「Dialog + Textarea + 保存按钮」模式废弃，NoteEditorModal.tsx 删除
+- 新组件 RichNoteEditor：工具栏（H1-H3/粗/斜/下划线/删除线/高亮/无序/有序/待办/引用/分隔线/撤销重做，横向可滚动，mousedown preventDefault 保焦点）+ 编辑区；globals.css 新增 .note-editor 排版（标题/列表/自定义粉色勾选框/引用/虚线分隔线/占位文字）
+- 新组件 NoteEditorFullScreen：全屏覆盖页（100dvh + 安全区），顶部「返回｜共享/私人徽章｜保存状态（保存中…/已保存 HH:MM）｜删除」；标题无边框大字输入；title/content 双份 ref 供防抖回调读最新值，dirty 标记 + 返回 flush
+- 兼容历史纯文本：toEditorHtml 按行拆 <p>（转义防注入）、htmlToPlainText/noteExcerpt 列表摘要、countTodos 解析 data-checked 显示「待办 n/m」徽标、isBlankNoteContent 判空清理
+- useNotes.createNote 改 .select().single() 返回新笔记行（NoteResult 类型），列表头插免查询；删除路径复用 ConfirmDialog
+- 验证：lint 零错误、tsc src/ 零错误、helpers 新增函数 15 项断言全过（bun -e 内联跑）；浏览器冒烟：伪造 session 验证 /notes 新代码渲染无崩溃，FAB 失败分支正确（401 → 中文 toast → 无效会话被清除 → AuthGuard 踢回），errors 零报错
+- ⚠️ 端到端（真实新建→富文本→自动保存→落库）本轮未完成：Supabase 免费确认邮件配额耗尽（email rate limit exceeded，mailer_autoconfirm=false 每次注册必发邮件），注册无法完成；属外部配额限制，待窗口恢复后用真实邮箱按 README 验收
+
+Stage Summary:
+- 笔记编辑全面升级：全屏编辑页 + Tiptap 富文本 + 自动保存 + 空笔记自动清理；数据库与 Realtime 架构零改动，历史纯文本笔记无缝兼容（可编辑可展示）
+- 新依赖：@tiptap/*@^2、dompurify；删除 NoteEditorModal.tsx
+- 经验：Supabase 免费版确认邮件限流会卡死自动化注册验证——测试验证要么用已确认账号，要么在 Supabase 后台临时关闭 Confirm email

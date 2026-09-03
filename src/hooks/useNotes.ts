@@ -21,7 +21,7 @@ import { toast } from 'sonner'
 import { getSupabase } from '@/lib/supabase/client'
 import { getErrorMessage } from '@/lib/helpers'
 import { useAuth } from '@/hooks/useAuth'
-import type { Note, NoteInput, NoteType, OpResult } from '@/lib/types'
+import type { Note, NoteInput, NoteResult, NoteType, OpResult } from '@/lib/types'
 
 export function useNotes(noteType: NoteType, coupleId: string | null) {
   const { user } = useAuth()
@@ -105,27 +105,34 @@ export function useNotes(noteType: NoteType, coupleId: string | null) {
     }
   }, [user, ready, loadNotes])
 
-  /** 新建笔记（共享笔记必须已绑定情侣，couple_id 由 RLS 校验） */
+  /**
+   * 新建笔记（共享笔记必须已绑定情侣，couple_id 由 RLS 校验）。
+   * 返回创建后的完整笔记行——「新建即进入全屏编辑」需要立刻拿到 id。
+   */
   const createNote = useCallback(
-    async (input: NoteInput): Promise<OpResult> => {
-      if (!user) return { error: '请先登录' }
+    async (input: NoteInput): Promise<NoteResult> => {
+      if (!user) return { error: '请先登录', note: null }
       if (noteType === 'shared' && !coupleId) {
-        return { error: '尚未绑定情侣，无法使用共享笔记' }
+        return { error: '尚未绑定情侣，无法使用共享笔记', note: null }
       }
-      const { error } = await getSupabase().from('notes').insert({
-        title: input.title,
-        content: input.content,
-        note_type: noteType,
-        user_id: user.id,
-        couple_id: noteType === 'shared' ? coupleId : null,
-      })
-      if (error) return { error: getErrorMessage(error) }
-      // 立即刷新本方列表（对方由 Realtime 通知刷新）
-      const result = await loadNotes()
-      if (result) setNotes(result)
-      return { error: null }
+      const { data, error } = await getSupabase()
+        .from('notes')
+        .insert({
+          title: input.title,
+          content: input.content,
+          note_type: noteType,
+          user_id: user.id,
+          couple_id: noteType === 'shared' ? coupleId : null,
+        })
+        .select()
+        .single()
+      if (error) return { error: getErrorMessage(error), note: null }
+      const note = data as Note
+      // 列表头插新建笔记（避免一次额外的查询；顺序与 updated_at 倒序一致）
+      setNotes((prev) => [note, ...prev])
+      return { error: null, note }
     },
-    [user, noteType, coupleId, loadNotes],
+    [user, noteType, coupleId],
   )
 
   /** 编辑笔记（updated_at 由数据库触发器自动更新） */

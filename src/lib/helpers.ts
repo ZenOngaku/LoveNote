@@ -112,3 +112,73 @@ export function formatDateCN(iso: string): string {
   if (Number.isNaN(d.getTime())) return ''
   return `${d.getFullYear()}年${d.getMonth() + 1}月${d.getDate()}日`
 }
+
+/* ============================================================
+ * 富文本笔记工具（content 字段存 Tiptap 输出的 HTML）
+ * 兼容历史数据：v2 之前的笔记 content 是纯文本，所有工具函数
+ * 都先判断是否 HTML，纯文本原样/轻处理后返回。
+ * ============================================================ */
+
+/** 判断内容是否为富文本 HTML（粗略检测常见块级/行内标签） */
+export function isHtmlContent(content: string): boolean {
+  return /<\/?(p|div|br|h[1-6]|ul|ol|li|strong|em|u|s|blockquote|pre|code|hr|mark)\b[^>]*>/i.test(content)
+}
+
+/** HTML 转义（用于把旧纯文本包进 <p> 时防注入） */
+function escapeHtml(text: string): string {
+  return text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+}
+
+/**
+ * 把库里的 content 转为编辑器初始 HTML：
+ * - 富文本直接返回
+ * - 旧纯文本按换行拆成 <p> 段落（视觉上与原来一致）
+ */
+export function toEditorHtml(content: string): string {
+  if (!content) return ''
+  if (isHtmlContent(content)) return content
+  return content
+    .split(/\n/)
+    .map((line) => (line ? `<p>${escapeHtml(line)}</p>` : '<p><br></p>'))
+    .join('')
+}
+
+/** 提取纯文本（列表摘要用）：块级标签转换行、剥掉其余标签、还原常见实体 */
+export function htmlToPlainText(html: string): string {
+  if (!isHtmlContent(html)) return html
+  return html
+    .replace(/<br\s*\/?>/gi, '\n')
+    .replace(/<\/(p|div|h[1-6]|li|blockquote|pre)>/gi, '\n')
+    .replace(/<[^>]+>/g, '')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim()
+}
+
+/** 列表卡片摘要：折叠空白后截取前 maxLen 字 */
+export function noteExcerpt(content: string, maxLen = 120): string {
+  const text = htmlToPlainText(content).replace(/\s+/g, ' ').trim()
+  return text.length > maxLen ? `${text.slice(0, maxLen)}…` : text
+}
+
+/** 内容是否为空（<p><br></p>、空待办列表等都算空，用于关闭编辑页时清理空笔记） */
+export function isBlankNoteContent(content: string): boolean {
+  return htmlToPlainText(content).length === 0
+}
+
+/** 待办进度：统计 Tiptap task list 项数与勾选数；无待办返回 null */
+export function countTodos(html: string): { done: number; total: number } | null {
+  if (!isHtmlContent(html)) return null
+  const items = html.match(/<li[^>]*data-checked="(?:true|false)"/gi)
+  if (!items || items.length === 0) return null
+  const done = items.filter((s) => /data-checked="true"/i.test(s)).length
+  return { done, total: items.length }
+}
