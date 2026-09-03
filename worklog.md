@@ -1,4 +1,4 @@
-# CoupleNote 项目 Worklog
+# LoveNote 项目 Worklog
 
 ---
 Task ID: 1
@@ -85,3 +85,26 @@ Stage Summary:
 - 认证页视觉升级为用户自定义土豆花纹背景（裁水印 + 镜像无缝平铺），placeholder 统一为 love@potato.com
 - 交付保活方案：日常使用即保活 + GitHub Actions 每 2 天自动 ping 兜底（.github/workflows/keep-alive.yml，用户配置 SUPABASE_URL / SUPABASE_ANON_KEY 两个 Secrets 即可）
 - Supabase 平台建议：免费版 + 保活即可长期用（情侣日常使用天然保活）；付费 $25/月免 pause；彻底自主需自托管（VPS + PocketBase/自托管 Supabase，成本与运维上升，不建议当前阶段迁移）
+
+---
+Task ID: 5
+Agent: Z.ai Code (主 Agent)
+Task: ① 项目更名 CoupleNote → LoveNote（项目名 + 页面显示）② 重做认证页壁纸：放弃平铺拼接，改为按重复规律扩展 ③ 统一浅色版配色（用户深色壁纸生成中，先交付浅色统一版）。
+
+Work Log:
+- 更名：layout.tsx（title/description/applicationName）、首页 AppShell title、设置页页脚、AuthGuard SplashScreen、AuthShell h1、globals.css 注释、package.json name=lovenote、README.md 全文替换、schema.sql 注释、worklog 标题；rg 复核 src/ 零残留
+- 壁纸迭代（scripts/extend-bg-light.mjs，可重复执行）：
+  - v1 镜像扩展（2x2 tile 平铺，上版遗留）→ 千鸟格对称「心形土豆」+ 780px 重复单元，用户反馈仍然奇怪
+  - v2 单图四周镜像扩展 600px → 边缘被裁断的图案被反射补全成对称缝合体，仍怪
+  - v3 内容缩 85% 垫底色再镜像 → 无缝合体但留白环勾出内容矩形；实测底色应为 #fdfbee（非 #fdfdf1）
+  - 40 倍对比度放大诊断：源图每个图案带 30~80px 水彩晕圈 + 全图色度噪点，任何重复规则必暴露（晕圈被擦线留影成「幽灵图案」）
+  - 最终：放弃扩展，整图交付——裁水印 + 连通域分析擦除全部触边图案（56 个，含包围笔画，8px 膨胀盖抗锯齿/振铃）→ bg-light.webp（1600x2648, 115KB）+ CSS bg-cover bg-center；cover 数学保证任意视口满铺、零接缝、一屏零重复，手机竖屏恰为壁纸原始密度
+- 删除旧 public/pattern.webp；AuthShell 改单图 cover + 底色 #fdfbee 兜底
+- 浅色版统一（登录/注册/忘记密码/重置密码四页）：标题/标语/卡片标题改 rose-900、正文 rose-900/60、Label rose-900/70、图标 rose-300、输入框改白 70% 填充 + rose-200 边框 + rose-400 placeholder + rose 聚焦环、卡片改白 85% + backdrop-blur；SplashScreen 底色同步 #fdfbee
+- 验证：bun run lint 零错误；tsc --noEmit src/ 零错误；agent-browser 实测移动 390x844（login/register/forgot-password 截图目检：壁纸无缝满铺、浅色统一、LoveNote 生效、placeholder love@potato.com）+ 桌面 1280x800（自然横带满铺）；登录提交错误 toast 正常；页面 errors/console 零报错；dev.log 全 200
+- 临时截图已清理；浏览器已关闭
+
+Stage Summary:
+- 品牌全面更名 LoveNote；认证页壁纸零拼接零重复（整图 cover + 边缘清障方案），四认证页浅色版配色统一
+- 深色版壁纸就绪后：同流程可产出 bg-dark.webp（脚本改 SRC/OUT 即可），AuthShell 换 URL 即可切换
+- 上传目录中的深色小图（176x143）判定为深色版色样，本轮未使用；等用户完整深色壁纸素材

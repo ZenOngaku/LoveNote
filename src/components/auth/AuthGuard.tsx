@@ -17,13 +17,13 @@ import { useAuth } from '@/hooks/useAuth'
 export function SplashScreen() {
   return (
     <div
-      className="flex min-h-screen flex-col items-center justify-center bg-[#FFF7F8]"
+      className="flex min-h-screen flex-col items-center justify-center bg-[#fdfbee]"
       aria-label="加载中"
     >
       <div className="flex h-16 w-16 animate-pulse items-center justify-center rounded-full bg-rose-100">
         <Heart className="h-8 w-8 fill-rose-300 text-rose-400" />
       </div>
-      <p className="mt-4 text-sm font-medium tracking-widest text-rose-400">CoupleNote</p>
+      <p className="mt-4 text-sm font-medium tracking-widest text-rose-400">LoveNote</p>
     </div>
   )
 }

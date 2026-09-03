@@ -192,7 +192,7 @@ function SettingsContent() {
 
       {/* 页脚 */}
       <p className="mt-8 text-center text-xs text-stone-300">
-        CoupleNote v1.0 · 愿你们的每一天都被温柔记录 💗
+        LoveNote v1.0 · 愿你们的每一天都被温柔记录 💗
       </p>
 
       {/* ============ 弹窗们 ============ */}

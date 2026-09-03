@@ -17,10 +17,10 @@ const geistMono = Geist_Mono({
 
 // 页面元信息
 export const metadata: Metadata = {
-  title: 'CoupleNote · 情侣共享记事本',
+  title: 'LoveNote · 情侣共享记事本',
   description:
-    '一款简约温柔的情侣共享记事本：邀请码配对、共享笔记实时同步、私人笔记独立空间。基于 Next.js + Supabase 构建。',
-  applicationName: 'CoupleNote',
+    'LoveNote —— 一款简约温柔的情侣共享记事本：邀请码配对、共享笔记实时同步、私人笔记独立空间。基于 Next.js + Supabase 构建。',
+  applicationName: 'LoveNote',
   icons: {
     icon: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">💗</text></svg>',
   },

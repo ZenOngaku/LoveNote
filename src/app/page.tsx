@@ -99,7 +99,7 @@ function HomeContent() {
   }
 
   return (
-    <AppShell title="CoupleNote">
+    <AppShell title="LoveNote">
       <ConfigNotice />
 
       {/* 问候语 */}
