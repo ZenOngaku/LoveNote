@@ -61,9 +61,11 @@
 │   │   ├── notes/
 │   │   │   ├── NoteTabs.tsx       # 共享/私人双 Tab 切换
 │   │   │   ├── NoteList.tsx       # 笔记列表（骨架屏/空状态）
-│   │   │   ├── NoteEditorModal.tsx# 新建/编辑笔记弹窗
+│   │   │   ├── NoteEditorFullScreen.tsx # 全屏编辑器（含长按操作菜单）
+│   │   │   ├── RichNoteEditor.tsx # TipTap 富文本编辑器
+│   │   │   ├── NoteActionSheet.tsx# 笔记长按操作菜单
 │   │   │   └── ConfirmDialog.tsx  # 通用二次确认弹窗
-│   │   └── ui/                    # shadcn/ui 基础组件
+│   │   └── ui/                    # shadcn/ui 基础组件（仅保留在用）
 │   ├── hooks/
 │   │   ├── useAuth.tsx            # 鉴权 Hook（会话持久化/资料/登录注册退出）
 │   │   ├── useCouple.ts           # 情侣关系 Hook（配对/解绑 + Realtime）
@@ -73,9 +75,10 @@
 │       ├── types.ts               # 数据类型定义
 │       └── helpers.ts             # 工具函数（时间格式化/错误翻译/复制）
 ├── public/
-│   ├── bg-light.webp              # 认证页浅色壁纸（小图案密排）
-│   ├── bg-light.webp              # 认证页浅色壁纸（斜向点阵小图案）
-│   └── bg-dark.webp               # 认证页深色壁纸（墨色重映射生成）
+│   ├── bg-light.webp              # 认证页浅色壁纸
+│   ├── bg-dark.webp               # 认证页深色壁纸
+│   ├── logo.svg                   # Logo
+│   └── robots.txt
 ├── scripts/
 │   ├── make-bg-light.mjs          # 浅色壁纸生成：墨迹印章 + 斜向点阵密排
 │   └── make-bg-dark.mjs           # 深色壁纸生成：墨色重映射
@@ -116,9 +119,10 @@
 cp .env.local.example .env.local
 ```
 
-2. 在 Supabase Dashboard → **Project Settings → API** 中找到：
+2. 在 Supabase Dashboard → **Project Settings → API Keys** 中找到：
    - `Project URL` → 填入 `NEXT_PUBLIC_SUPABASE_URL`
-   - `anon public` → 填入 `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+   - `publishable`（匿名公钥，老版控制台叫 anon）→ 填入 `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+   - ⚠️ 不要使用 `secret`（service_role）密钥，那是管理员密钥
 
 ```bash
 # .env.local
@@ -208,14 +212,27 @@ npm run dev
 | 站点地址 | Authentication → URL Configuration → Site URL | 设为你的站点根地址（本地开发默认 `http://localhost:3000` 即可，其子路径如 `/reset-password` 自动允许） |
 | 重定向白名单 | Authentication → URL Configuration → Redirect URLs | **部署到线上后必须把生产域名加入**（如 `https://your-domain.com`），否则注册验证邮件 / 密码重置邮件的链接无法跳回你的站点 |
 
-## ☁️ 部署上线（可选）
+## ☁️ 部署上线（Vercel 免费）
 
-项目为标准 Next.js 应用，可直接部署到 Vercel / Netlify / 自托管服务器：
+本项目为「纯客户端 + Supabase BaaS」架构：前端无自建服务端逻辑（数据/认证/实时同步全部由 Supabase 提供），可直接免费部署到 **Vercel Hobby** 计划（无需信用卡）。
 
-1. 推送代码到 GitHub
-2. Vercel 导入仓库，Framework Preset 选择 Next.js
-3. 环境变量中添加 `NEXT_PUBLIC_SUPABASE_URL` 与 `NEXT_PUBLIC_SUPABASE_ANON_KEY`
-4. 部署完成后，建议在 Supabase → Authentication → URL Configuration 中把站点域名加入 allowed origins
+**部署前**：确认已执行「第二步」的 `supabase/schema.sql`、本机 `.env.local` 已配好，且本地 `npm run build` 能通过。
+
+1. 把代码推送到 GitHub 仓库
+2. 打开 [vercel.com](https://vercel.com)，用 GitHub 账号登录（首次需授权 Vercel 访问该仓库）
+3. **Add New → Project** → Import 该仓库：Framework 自动识别 Next.js，构建命令保持默认 `next build` 即可
+4. 在 **Environment Variables** 中添加两项（值同「第三步」，取自 Supabase → Project Settings → API Keys）：
+   ```bash
+   NEXT_PUBLIC_SUPABASE_URL=https://xxxxxxxx.supabase.co
+   NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOi...
+   ```
+   > `NEXT_PUBLIC_*` 在构建时内联，之后修改值需要**重新部署**才生效。
+5. 点击 **Deploy**，等待构建完成（约 1-3 分钟），获得 `https://<项目名>.vercel.app`
+6. 回到 Supabase → **Authentication → URL Configuration**：把线上域名加入 `Site URL` 与 `Redirect URLs`（否则邮箱确认 / 密码重置邮件的链接无法跳回站点），改完配置后建议再手动 Redeploy 一次
+
+**线上验证**：打开 Vercel 域名 → 注册新账号 → 写一条共享笔记 → Supabase Table Editor 中 `notes` 表应出现新行；另一台设备登录同一账号应能实时看到笔记。
+
+> **免费额度提醒**：Supabase 免费项目连续 7 天无 API 请求会被自动暂停。仓库内 `.github/workflows/keep-alive.yml` 每 2 天自动 ping 一次兜底，但需要先在 GitHub 仓库 **Settings → Secrets and variables → Actions** 中添加 `SUPABASE_URL` 与 `SUPABASE_ANON_KEY` 两个 Secret 才会生效。
 
 ## 🎨 壁纸定制（浅色 / 深色）
 
