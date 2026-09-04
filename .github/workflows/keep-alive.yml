@@ -54,8 +54,15 @@ jobs:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
         run: |
-          curl -sf --url "${SUPABASE_URL}/rest/v1/" \
-            -H "apikey: ${SUPABASE_ANON_KEY}" \
-            -H "Authorization: Bearer ${SUPABASE_ANON_KEY}" \
-            --max-time 30
-          echo "Keep-alive ping 成功"
+          # 保活目的 = 产生 API 请求；任何 HTTP 响应（含 4xx/5xx）都算请求成功。
+          # 因此不用 -f，只区分「请求到达」与「网络层失败」。
+          status="$(
+            curl -s -o /dev/null -w '%{http_code}' --max-time 30 \
+              --url "${SUPABASE_URL}/rest/v1/" \
+              -H "apikey: ${SUPABASE_ANON_KEY}" \
+              -H "Authorization: Bearer ${SUPABASE_ANON_KEY}"
+          )" || {
+            echo "::error::网络请求失败：无法连接到 ${SUPABASE_URL}（检查 URL 是否可达）"
+            exit 1
+          }
+          echo "Keep-alive ping 成功（HTTP ${status}）"
