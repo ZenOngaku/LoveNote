@@ -10,7 +10,7 @@
  * - 加载中显示骨架屏；空列表显示空状态插画区
  * - 点击卡片进入全屏编辑页；长按卡片（桌面右键等价）弹出操作面板
  */
-import { ListTodo } from 'lucide-react'
+import { ListTodo, MoreHorizontal } from 'lucide-react'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useLongPress } from '@/hooks/useLongPress'
 import { countTodos, formatRelativeTime, noteExcerpt } from '@/lib/helpers'
@@ -99,13 +99,15 @@ function NoteCard({ note, isMine, partnerName, onEdit, onLongPress }: NoteCardPr
   )
 
   return (
-    <li>
+    <li className="relative">
       {/* 整卡可点击进入全屏编辑页；active 缩放提供触控反馈。
           select-none + touch-callout 防止长按时弹系统选字/拨号菜单 */}
       <button
         type="button"
         {...pressHandlers}
-        className="w-full touch-pan-y select-none rounded-2xl border border-rose-100 bg-white p-4 text-left shadow-sm transition-transform active:scale-[0.99] [-webkit-touch-callout:none] dark:border-white/10 dark:bg-[#3a241a]/85"
+        className={`w-full touch-pan-y select-none rounded-2xl border border-rose-100 bg-white text-left shadow-sm transition-transform active:scale-[0.99] [-webkit-user-select:none] [-webkit-touch-callout:none] dark:border-white/10 dark:bg-[#3a241a]/85 ${
+          onLongPress ? 'pb-4 pl-4 pr-14 pt-4' : 'p-4'
+        }`}
         aria-label={`编辑笔记：${note.title || '无标题'}（长按可删除或转换类型）`}
       >
         <div className="flex items-center justify-between gap-2">
@@ -135,6 +137,18 @@ function NoteCard({ note, isMine, partnerName, onEdit, onLongPress }: NoteCardPr
           )}
         </p>
       </button>
+
+      {/* 显式「更多操作」入口：与长按等效，微信/系统级长按菜单冲突时的保底路径 */}
+      {onLongPress && (
+        <button
+          type="button"
+          onClick={() => onLongPress(note)}
+          aria-label={`打开「${note.title || '无标题'}」的操作菜单（转换类型 / 删除）`}
+          className="absolute right-2.5 top-1/2 z-[1] flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full text-stone-400 transition-colors hover:bg-rose-50 hover:text-rose-500 active:bg-rose-100 dark:text-rose-200/50 dark:hover:bg-white/10 dark:hover:text-rose-300 dark:active:bg-white/15"
+        >
+          <MoreHorizontal className="h-5 w-5" />
+        </button>
+      )}
     </li>
   )
 }
