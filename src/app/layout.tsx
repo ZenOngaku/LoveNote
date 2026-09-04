@@ -1,6 +1,8 @@
 import type { Metadata, Viewport } from 'next'
 import { Geist, Geist_Mono } from 'next/font/google'
+import Script from 'next/script'
 import './globals.css'
+import { ThemeSync } from '@/components/ThemeSync'
 import { Toaster } from '@/components/ui/sonner'
 import { AuthProvider } from '@/hooks/useAuth'
 
@@ -44,8 +46,20 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased bg-background text-foreground`}
       >
+        {/* 首帧防闪烁：HTML 解析前按已存主题预设 <html class="dark"> */}
+        <Script
+          id="theme-init"
+          strategy="beforeInteractive"
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{if(localStorage.getItem('lovenote-wallpaper-theme')==='dark')document.documentElement.classList.add('dark')}catch(e){}})()`,
+          }}
+        />
+
         {/* 全局鉴权状态 Provider */}
         <AuthProvider>{children}</AuthProvider>
+
+        {/* 主题同步：把壁纸主题映射为全局 .dark（含 meta theme-color） */}
+        <ThemeSync />
 
         {/* 全局 Toast 提示（成功/错误/警告） */}
         <Toaster position="top-center" richColors closeButton />

@@ -48,13 +48,13 @@ export function NoteActionSheet({
     <Sheet open={!!note} onOpenChange={(o) => !o && onClose()}>
       <SheetContent
         side="bottom"
-        className="mx-auto max-w-md rounded-t-3xl border-rose-100 bg-white px-4 pb-9 pt-2 [&>button]:hidden"
+        className="mx-auto max-w-md rounded-t-3xl border-rose-100 bg-white px-4 pb-9 pt-2 [&>button]:hidden dark:border-white/10 dark:bg-[#2b1a13]"
       >
         {/* 顶部小把手（视觉提示：可下滑关闭） */}
-        <div className="mx-auto mt-1 h-1.5 w-10 shrink-0 rounded-full bg-stone-200" aria-hidden />
+        <div className="mx-auto mt-1 h-1.5 w-10 shrink-0 rounded-full bg-stone-200 dark:bg-white/20" aria-hidden />
 
         <SheetHeader className="shrink-0 items-center pb-1 pt-3 text-center">
-          <SheetTitle className="max-w-full truncate text-center text-base font-semibold text-stone-800">
+          <SheetTitle className="max-w-full truncate text-center text-base font-semibold text-stone-800 dark:text-rose-50">
             {note?.title || '无标题'}
           </SheetTitle>
           <SheetDescription className="text-center text-xs">
@@ -68,9 +68,9 @@ export function NoteActionSheet({
             type="button"
             onClick={() => note && onConvertType(note)}
             disabled={convertDisabled}
-            className="flex h-15 w-full items-center gap-3.5 rounded-2xl border border-rose-100 bg-rose-50/60 px-4 py-3 text-left transition-colors active:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-50"
+            className="flex h-15 w-full items-center gap-3.5 rounded-2xl border border-rose-100 bg-rose-50/60 px-4 py-3 text-left transition-colors active:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-50 dark:border-white/10 dark:bg-white/5 dark:active:bg-white/15"
           >
-            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white shadow-sm">
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white shadow-sm dark:bg-white/10">
               {toShared ? (
                 <Heart className="h-4.5 w-4.5 text-rose-400" />
               ) : (
@@ -78,10 +78,10 @@ export function NoteActionSheet({
               )}
             </span>
             <span className="min-w-0 flex-1">
-              <span className="block text-sm font-medium text-stone-700">
+              <span className="block text-sm font-medium text-stone-700 dark:text-rose-100">
                 {toShared ? '转为共享笔记' : '转为私人笔记'}
               </span>
-              <span className="mt-0.5 block text-xs text-stone-400">
+              <span className="mt-0.5 block text-xs text-stone-400 dark:text-rose-200/50">
                 {toShared
                   ? isBound
                     ? '与另一半共享这篇笔记'
@@ -95,14 +95,14 @@ export function NoteActionSheet({
           <button
             type="button"
             onClick={() => note && onDelete(note)}
-            className="flex h-15 w-full items-center gap-3.5 rounded-2xl border border-red-100 bg-red-50/50 px-4 py-3 text-left transition-colors active:bg-red-100"
+            className="flex h-15 w-full items-center gap-3.5 rounded-2xl border border-red-100 bg-red-50/50 px-4 py-3 text-left transition-colors active:bg-red-100 dark:border-red-400/20 dark:bg-red-400/10 dark:active:bg-red-400/20"
           >
-            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white shadow-sm">
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white shadow-sm dark:bg-white/10">
               <Trash2 className="h-4.5 w-4.5 text-red-400" />
             </span>
             <span className="min-w-0 flex-1">
-              <span className="block text-sm font-medium text-red-500">删除笔记</span>
-              <span className="mt-0.5 block text-xs text-stone-400">删除后无法恢复</span>
+              <span className="block text-sm font-medium text-red-500 dark:text-red-300">删除笔记</span>
+              <span className="mt-0.5 block text-xs text-stone-400 dark:text-rose-200/50">删除后无法恢复</span>
             </span>
           </button>
         </div>

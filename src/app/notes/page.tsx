@@ -143,12 +143,12 @@ function NotesContent() {
           emptyState={
             noteType === 'shared' && !coupleId ? (
               /* 共享 Tab 但尚未绑定情侣 */
-              <div className="rounded-3xl border border-dashed border-rose-200 bg-white/60 p-10 text-center">
+              <div className="rounded-3xl border border-dashed border-rose-200 bg-white/60 p-10 text-center dark:border-white/10 dark:bg-white/5">
                 <div className="text-5xl" aria-hidden>
                   💞
                 </div>
-                <p className="mt-3 font-medium text-stone-600">还没有绑定情侣</p>
-                <p className="mt-1 text-sm text-stone-400">
+                <p className="mt-3 font-medium text-stone-600 dark:text-rose-200/80">还没有绑定情侣</p>
+                <p className="mt-1 text-sm text-stone-400 dark:text-rose-200/50">
                   绑定后，你们的共享笔记会实时出现在这里
                 </p>
                 <Button
@@ -160,14 +160,14 @@ function NotesContent() {
               </div>
             ) : (
               /* 已绑定但还没有笔记 / 私人笔记为空 */
-              <div className="rounded-3xl border border-dashed border-rose-200 bg-white/60 p-10 text-center">
+              <div className="rounded-3xl border border-dashed border-rose-200 bg-white/60 p-10 text-center dark:border-white/10 dark:bg-white/5">
                 <div className="text-5xl" aria-hidden>
                   {noteType === 'shared' ? '📔' : '📝'}
                 </div>
-                <p className="mt-3 font-medium text-stone-600">
+                <p className="mt-3 font-medium text-stone-600 dark:text-rose-200/80">
                   {noteType === 'shared' ? '还没有共享笔记' : '还没有私人笔记'}
                 </p>
-                <p className="mt-1 text-sm text-stone-400">
+                <p className="mt-1 text-sm text-stone-400 dark:text-rose-200/50">
                   {noteType === 'shared'
                     ? '点击右下角 + 记录你们的第一个瞬间吧'
                     : '只属于自己的悄悄话，点击右下角 + 开始记录'}
@@ -184,7 +184,7 @@ function NotesContent() {
         onClick={() => void openCreate()}
         disabled={creating}
         aria-label="新建笔记"
-        className="fixed bottom-24 right-4 z-30 flex h-14 w-14 items-center justify-center rounded-full bg-rose-500 text-white shadow-lg shadow-rose-300/60 transition-transform active:scale-95 disabled:opacity-60 min-[448px]:right-[calc(50%-13rem)]"
+        className="fixed bottom-24 right-4 z-30 flex h-14 w-14 items-center justify-center rounded-full bg-rose-500 text-white shadow-lg shadow-rose-300/60 transition-transform active:scale-95 disabled:opacity-60 dark:shadow-black/30 min-[448px]:right-[calc(50%-13rem)]"
       >
         <Plus className="h-6 w-6" strokeWidth={2.5} />
       </button>

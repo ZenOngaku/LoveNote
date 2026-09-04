@@ -39,7 +39,7 @@ export function CoupleCard({ myNickname, partner, relation, onUnbind }: CoupleCa
     : 0
 
   return (
-    <div className="rounded-3xl border border-rose-100 bg-gradient-to-br from-rose-100 via-white to-rose-50 p-8 text-center shadow-sm">
+    <div className="rounded-3xl border border-rose-100 bg-gradient-to-br from-rose-100 via-white to-rose-50 p-8 text-center shadow-sm dark:border-white/10 dark:from-[#45291b] dark:via-[#3a241a] dark:to-[#33200f]">
       {/* 双头像 + 爱心连接 */}
       <div className="flex items-center justify-center gap-5">
         <AvatarCircle name={myNickname} />
@@ -47,10 +47,10 @@ export function CoupleCard({ myNickname, partner, relation, onUnbind }: CoupleCa
         <AvatarCircle name={partner?.nickname ?? null} fallbackLabel="TA" />
       </div>
 
-      <p className="mt-5 text-lg font-semibold text-stone-800">
+      <p className="mt-5 text-lg font-semibold text-stone-800 dark:text-rose-50">
         {myNickname || '我'} & {partner?.nickname || 'TA'}
       </p>
-      <p className="mt-1 text-sm text-stone-400">
+      <p className="mt-1 text-sm text-stone-400 dark:text-rose-200/50">
         {relation.bound_at ? `${formatDateCN(relation.bound_at)} 绑定` : '已绑定'}
       </p>
       <p className="mt-1 text-sm text-rose-400">💞 已经一起记录了 {days} 天</p>
@@ -68,7 +68,7 @@ export function CoupleCard({ myNickname, partner, relation, onUnbind }: CoupleCa
       <Button
         variant="ghost"
         onClick={() => setConfirmOpen(true)}
-        className="mt-2 h-10 w-full rounded-full text-sm text-stone-400 hover:bg-white/60 hover:text-red-400"
+        className="mt-2 h-10 w-full rounded-full text-sm text-stone-400 hover:bg-white/60 hover:text-red-400 dark:text-rose-200/50 dark:hover:bg-white/10"
       >
         <Unlink className="mr-1 h-4 w-4" />
         解除情侣配对
@@ -94,7 +94,7 @@ function AvatarCircle({ name, fallbackLabel = '我' }: { name: string | null; fa
   return (
     <div
       aria-hidden
-      className="flex h-16 w-16 items-center justify-center rounded-full bg-white text-xl font-bold text-rose-400 shadow-sm ring-1 ring-rose-100"
+      className="flex h-16 w-16 items-center justify-center rounded-full bg-white text-xl font-bold text-rose-400 shadow-sm ring-1 ring-rose-100 dark:bg-[#3a241a] dark:ring-white/15"
     >
       {first}
     </div>

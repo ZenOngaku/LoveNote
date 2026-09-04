@@ -104,18 +104,18 @@ function HomeContent() {
 
       {/* 问候语 */}
       <div className="mb-5">
-        <p className="text-sm text-stone-400">Hi，{profile?.nickname || '亲爱的'} 👋</p>
-        <h2 className="mt-0.5 text-xl font-bold text-stone-800">
+        <p className="text-sm text-stone-400 dark:text-rose-200/50">Hi，{profile?.nickname || '亲爱的'} 👋</p>
+        <h2 className="mt-0.5 text-xl font-bold text-stone-800 dark:text-rose-50">
           {isBound ? '欢迎回到你们的空间' : '先和另一半完成配对吧'}
         </h2>
       </div>
 
       {/* 加载中骨架屏 */}
       {loading ? (
-        <div className="rounded-3xl border border-rose-100 bg-white p-8 shadow-sm">
-          <Skeleton className="mx-auto h-16 w-16 rounded-full bg-rose-100" />
-          <Skeleton className="mx-auto mt-4 h-5 w-32 bg-rose-100" />
-          <Skeleton className="mx-auto mt-6 h-12 w-full rounded-full bg-rose-50" />
+        <div className="rounded-3xl border border-rose-100 bg-white p-8 shadow-sm dark:border-white/10 dark:bg-white/5">
+          <Skeleton className="mx-auto h-16 w-16 rounded-full bg-rose-100 dark:bg-white/10" />
+          <Skeleton className="mx-auto mt-4 h-5 w-32 bg-rose-100 dark:bg-white/10" />
+          <Skeleton className="mx-auto mt-6 h-12 w-full rounded-full bg-rose-50 dark:bg-white/5" />
         </div>
       ) : isBound && relation ? (
         /* 已绑定：情侣卡片 */

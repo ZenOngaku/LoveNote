@@ -114,26 +114,28 @@ export function NoteEditorFullScreen({
       animate={{ y: 0 }}
       exit={{ y: '100%' }}
       transition={{ type: 'spring', damping: 32, stiffness: 320 }}
-      className="fixed inset-0 z-50 bg-white"
+      className="fixed inset-0 z-50 bg-white dark:bg-[#2b1a13]"
       role="dialog"
       aria-modal="true"
       aria-label="编辑笔记"
     >
       <div className="mx-auto flex h-full w-full max-w-md flex-col pt-[env(safe-area-inset-top)]">
         {/* 顶部操作栏：返回 | 类型徽章 · 保存状态 | 删除 */}
-        <header className="flex h-14 shrink-0 items-center justify-between border-b border-rose-100/80 bg-white/95 px-2">
+        <header className="flex h-14 shrink-0 items-center justify-between border-b border-rose-100/80 bg-white/95 px-2 dark:border-white/10 dark:bg-[#2b1a13]/95">
           <div className="flex items-center gap-0.5">
             <button
               type="button"
               onClick={() => void handleClose()}
               aria-label="返回并保存"
-              className="flex h-11 w-11 items-center justify-center rounded-full text-stone-600 transition-colors hover:bg-rose-50 active:bg-rose-100"
+              className="flex h-11 w-11 items-center justify-center rounded-full text-stone-600 transition-colors hover:bg-rose-50 active:bg-rose-100 dark:text-rose-200/70 dark:hover:bg-white/10 dark:active:bg-white/15"
             >
               <ChevronLeft className="h-6 w-6" />
             </button>
             <span
               className={`flex items-center gap-1 rounded-full px-2.5 py-1 text-xs ${
-                noteType === 'shared' ? 'bg-rose-50 text-rose-400' : 'bg-stone-100 text-stone-500'
+                noteType === 'shared'
+                  ? 'bg-rose-50 text-rose-400 dark:bg-white/10 dark:text-rose-300'
+                  : 'bg-stone-100 text-stone-500 dark:bg-white/10 dark:text-rose-200/70'
               }`}
             >
               {noteType === 'shared' ? (
@@ -156,7 +158,7 @@ export function NoteEditorFullScreen({
               type="button"
               onClick={onDeleteRequest}
               aria-label="删除笔记"
-              className="flex h-10 w-10 items-center justify-center rounded-full text-red-400 transition-colors hover:bg-red-50 active:bg-red-100"
+              className="flex h-10 w-10 items-center justify-center rounded-full text-red-400 transition-colors hover:bg-red-50 active:bg-red-100 dark:hover:bg-white/10 dark:active:bg-white/15"
             >
               <Trash2 className="h-5 w-5" />
             </button>
@@ -170,9 +172,9 @@ export function NoteEditorFullScreen({
           maxLength={50}
           placeholder="标题"
           aria-label="笔记标题"
-          className="shrink-0 bg-transparent px-6 pb-1 pt-5 text-[22px] font-bold text-stone-800 outline-none placeholder:text-stone-300"
+          className="shrink-0 bg-transparent px-6 pb-1 pt-5 text-[22px] font-bold text-stone-800 outline-none placeholder:text-stone-300 dark:text-rose-50 dark:placeholder:text-rose-200/30"
         />
-        <p className="shrink-0 px-6 pb-1 text-xs text-stone-400">
+        <p className="shrink-0 px-6 pb-1 text-xs text-stone-400 dark:text-rose-200/40">
           {formatRelativeTime(note.updated_at)}修改 · 内容自动保存
         </p>
 
@@ -191,7 +193,7 @@ export function NoteEditorFullScreen({
 function SaveStatus({ state, savedAt }: { state: 'idle' | 'saving' | 'saved'; savedAt: Date | null }) {
   if (state === 'saving') {
     return (
-      <span className="flex items-center gap-1 px-1 text-xs text-stone-400" role="status">
+      <span className="flex items-center gap-1 px-1 text-xs text-stone-400 dark:text-rose-200/50" role="status">
         <Loader2 className="h-3 w-3 animate-spin" />
         保存中…
       </span>

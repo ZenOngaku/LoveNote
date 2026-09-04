@@ -45,11 +45,11 @@ export function NoteList({
     return (
       <div className="space-y-3" aria-label="加载中">
         {[0, 1, 2].map((i) => (
-          <div key={i} className="rounded-2xl border border-rose-100 bg-white p-4">
-            <Skeleton className="h-5 w-2/5 bg-rose-100" />
-            <Skeleton className="mt-3 h-4 w-full bg-rose-50" />
-            <Skeleton className="mt-2 h-4 w-3/5 bg-rose-50" />
-            <Skeleton className="mt-3 h-3 w-1/4 bg-rose-50" />
+          <div key={i} className="rounded-2xl border border-rose-100 bg-white p-4 dark:border-white/10 dark:bg-white/5">
+            <Skeleton className="h-5 w-2/5 bg-rose-100 dark:bg-white/10" />
+            <Skeleton className="mt-3 h-4 w-full bg-rose-50 dark:bg-white/5" />
+            <Skeleton className="mt-2 h-4 w-3/5 bg-rose-50 dark:bg-white/5" />
+            <Skeleton className="mt-3 h-3 w-1/4 bg-rose-50 dark:bg-white/5" />
           </div>
         ))}
       </div>
@@ -105,30 +105,30 @@ function NoteCard({ note, isMine, partnerName, onEdit, onLongPress }: NoteCardPr
       <button
         type="button"
         {...pressHandlers}
-        className="w-full touch-pan-y select-none rounded-2xl border border-rose-100 bg-white p-4 text-left shadow-sm transition-transform active:scale-[0.99] [-webkit-touch-callout:none]"
+        className="w-full touch-pan-y select-none rounded-2xl border border-rose-100 bg-white p-4 text-left shadow-sm transition-transform active:scale-[0.99] [-webkit-touch-callout:none] dark:border-white/10 dark:bg-[#3a241a]/85"
         aria-label={`编辑笔记：${note.title || '无标题'}（长按可删除或转换类型）`}
       >
         <div className="flex items-center justify-between gap-2">
-          <h3 className="truncate font-medium text-stone-800">
+          <h3 className="truncate font-medium text-stone-800 dark:text-rose-50">
             {note.title || '无标题'}
           </h3>
           {/* 共享笔记显示创建者标识 */}
           {note.note_type === 'shared' && (
-            <span className="shrink-0 rounded-full bg-rose-50 px-2 py-0.5 text-[11px] text-rose-400">
+            <span className="shrink-0 rounded-full bg-rose-50 px-2 py-0.5 text-[11px] text-rose-400 dark:bg-white/10 dark:text-rose-300">
               {isMine ? '我' : partnerName || 'TA'}
             </span>
           )}
         </div>
 
-        <p className="mt-1.5 line-clamp-2 whitespace-pre-wrap text-sm text-stone-500">
+        <p className="mt-1.5 line-clamp-2 whitespace-pre-wrap text-sm text-stone-500 dark:text-rose-200/60">
           {excerpt || '暂无内容'}
         </p>
 
-        <p className="mt-2.5 flex items-center gap-2 text-xs text-stone-400">
+        <p className="mt-2.5 flex items-center gap-2 text-xs text-stone-400 dark:text-rose-200/40">
           <span>{formatRelativeTime(note.updated_at)} 修改</span>
           {/* 含待办清单时显示勾选进度 */}
           {todos && (
-            <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] text-emerald-600">
+            <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] text-emerald-600 dark:bg-emerald-400/10 dark:text-emerald-300">
               <ListTodo className="h-3 w-3" aria-hidden />
               待办 {todos.done}/{todos.total}
             </span>

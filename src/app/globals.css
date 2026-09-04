@@ -80,37 +80,38 @@
 }
 
 .dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
+  /* LoveNote 深色：深可可底 + 玫粉点缀（与认证页深色壁纸同气质） */
+  --background: #2b1a13;
+  --foreground: #fff1f2;
+  --card: #3a241a;
+  --card-foreground: #fff1f2;
+  --popover: #3a241a;
+  --popover-foreground: #fff1f2;
+  --primary: #f43f5e;
+  --primary-foreground: #fff1f2;
+  --secondary: #45291b;
+  --secondary-foreground: #fda4af;
+  --muted: #3a241a;
+  --muted-foreground: rgb(253 164 175 / 0.6);
+  --accent: #45291b;
+  --accent-foreground: #ffe4e6;
   --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
-  --chart-1: oklch(0.488 0.243 264.376);
-  --chart-2: oklch(0.696 0.17 162.48);
-  --chart-3: oklch(0.769 0.188 70.08);
-  --chart-4: oklch(0.627 0.265 303.9);
-  --chart-5: oklch(0.645 0.246 16.439);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
+  --border: rgb(255 255 255 / 0.1);
+  --input: rgb(255 255 255 / 0.15);
+  --ring: #fda4af;
+  --chart-1: #fda4af;
+  --chart-2: #fb923c;
+  --chart-3: #fbbf24;
+  --chart-4: #a78bfa;
+  --chart-5: #34d399;
+  --sidebar: #2b1a13;
+  --sidebar-foreground: #fff1f2;
+  --sidebar-primary: #f43f5e;
+  --sidebar-primary-foreground: #fff1f2;
+  --sidebar-accent: #45291b;
+  --sidebar-accent-foreground: #ffe4e6;
+  --sidebar-border: rgb(255 255 255 / 0.1);
+  --sidebar-ring: #fda4af;
 }
 
 @layer base {
@@ -280,4 +281,41 @@
   color: inherit;
   padding: 0.05em 0.15em;
   border-radius: 0.25em;
+}
+
+/* ============================================================
+ * 整站深色模式（.dark）补充
+ * 说明：Tailwind 类内的深浅切换由各组件 dark: 变体完成；
+ *       这里的原生 CSS 段无法用 dark: 前缀，统一在此覆写。
+ * ============================================================ */
+/* 细滚动条 thumb */
+.dark ::-webkit-scrollbar-thumb {
+  background: rgb(255 255 255 / 0.15);
+}
+
+/* 文本选中 */
+.dark ::selection {
+  background: rgb(253 164 175 / 0.4);
+  color: #fff1f2;
+}
+
+/* 编辑器正文 */
+.dark .note-editor .ProseMirror {
+  color: #fff1f2;
+}
+
+/* 编辑器占位文字 */
+.dark .note-editor .ProseMirror p.is-editor-empty:first-child::before,
+.dark .note-editor .ProseMirror p.is-empty:first-child::before {
+  color: rgb(255 228 230 / 0.35);
+}
+
+/* 已完成待办 */
+.dark .note-editor .ProseMirror ul[data-type='taskList'] li[data-checked='true'] > div {
+  color: rgb(253 164 175 / 0.6);
+}
+
+/* 引用块文字 */
+.dark .note-editor .ProseMirror blockquote {
+  color: #fecdd3;
 }

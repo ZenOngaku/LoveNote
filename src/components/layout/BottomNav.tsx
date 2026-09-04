@@ -24,7 +24,7 @@ export function BottomNav() {
   return (
     <nav
       aria-label="底部导航"
-      className="fixed inset-x-0 bottom-0 z-30 border-t border-rose-100 bg-white/90 backdrop-blur-md"
+      className="fixed inset-x-0 bottom-0 z-30 border-t border-rose-100 bg-white/90 backdrop-blur-md dark:border-white/10 dark:bg-[#2b1a13]/90"
     >
       <div className="mx-auto flex h-16 max-w-md items-stretch justify-around pb-[env(safe-area-inset-bottom)]">
         {NAV_ITEMS.map(({ href, label, icon: Icon }) => {
@@ -35,7 +35,9 @@ export function BottomNav() {
               href={href}
               aria-current={active ? 'page' : undefined}
               className={`flex min-w-20 flex-1 flex-col items-center justify-center gap-1 text-[11px] transition-colors ${
-                active ? 'text-rose-500' : 'text-stone-400 hover:text-rose-400'
+                active
+                  ? 'text-rose-500 dark:text-rose-300'
+                  : 'text-stone-400 hover:text-rose-400 dark:text-rose-200/40 dark:hover:text-rose-300'
               }`}
             >
               <Icon

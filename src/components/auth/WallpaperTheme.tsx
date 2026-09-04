@@ -57,8 +57,7 @@ export function getStoredWallpaperTheme(): WallpaperTheme {
  */
 export function useWallpaperTheme() {
   const theme = useSyncExternalStore(subscribe, getClientSnapshot, getServerSnapshot)
-  const toggle = useCallback(() => {
-    const next: WallpaperTheme = getClientSnapshot() === 'light' ? 'dark' : 'light'
+  const setTheme = useCallback((next: WallpaperTheme) => {
     try {
       localStorage.setItem(STORAGE_KEY, next)
     } catch {
@@ -66,7 +65,10 @@ export function useWallpaperTheme() {
     }
     listeners.forEach((notify) => notify())
   }, [])
-  return { theme, toggle }
+  const toggle = useCallback(() => {
+    setTheme(getClientSnapshot() === 'light' ? 'dark' : 'light')
+  }, [setTheme])
+  return { theme, toggle, setTheme }
 }
 
 /** 右上角深浅壁纸切换按钮（绝对定位于 AuthShell 根容器） */

@@ -19,17 +19,17 @@ interface NoteTabsProps {
 export function NoteTabs({ value, onChange }: NoteTabsProps) {
   return (
     <Tabs value={value} onValueChange={(v) => onChange(v as NoteType)}>
-      <TabsList className="grid h-12 w-full grid-cols-2 rounded-full bg-rose-100/70 p-1">
+      <TabsList className="grid h-12 w-full grid-cols-2 rounded-full bg-rose-100/70 p-1 dark:bg-white/10">
         <TabsTrigger
           value="shared"
-          className="h-10 rounded-full text-sm data-[state=active]:bg-white data-[state=active]:text-rose-500 data-[state=active]:shadow-sm"
+          className="h-10 rounded-full text-sm data-[state=active]:bg-white data-[state=active]:text-rose-500 data-[state=active]:shadow-sm dark:data-[state=active]:bg-white/15 dark:data-[state=active]:text-rose-300"
         >
           <Heart className="mr-1 h-4 w-4" />
           情侣共享笔记
         </TabsTrigger>
         <TabsTrigger
           value="private"
-          className="h-10 rounded-full text-sm data-[state=active]:bg-white data-[state=active]:text-rose-500 data-[state=active]:shadow-sm"
+          className="h-10 rounded-full text-sm data-[state=active]:bg-white data-[state=active]:text-rose-500 data-[state=active]:shadow-sm dark:data-[state=active]:bg-white/15 dark:data-[state=active]:text-rose-300"
         >
           <Lock className="mr-1 h-4 w-4" />
           我的私人笔记

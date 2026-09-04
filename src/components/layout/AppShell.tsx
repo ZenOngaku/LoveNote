@@ -20,12 +20,12 @@ interface AppShellProps {
 
 export function AppShell({ title, children }: AppShellProps) {
   return (
-    <div className="min-h-screen bg-gradient-to-b from-rose-50 via-[#FFF7F8] to-white">
+    <div className="min-h-screen bg-gradient-to-b from-rose-50 via-[#FFF7F8] to-white dark:from-[#3a241a] dark:via-[#2b1a13] dark:to-[#241510]">
       <div className="mx-auto flex min-h-screen w-full max-w-md flex-col">
         {/* 顶部标题栏（标题水平居中） */}
-        <header className="sticky top-0 z-20 border-b border-rose-100/80 bg-white/70 backdrop-blur-md">
+        <header className="sticky top-0 z-20 border-b border-rose-100/80 bg-white/70 backdrop-blur-md dark:border-white/10 dark:bg-[#2b1a13]/70">
           <div className="flex h-14 items-center justify-center px-5">
-            <h1 className="text-base font-semibold text-stone-800">{title}</h1>
+            <h1 className="text-base font-semibold text-stone-800 dark:text-rose-50">{title}</h1>
           </div>
         </header>
 

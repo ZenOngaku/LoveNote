@@ -122,7 +122,9 @@ function ToolbarButton({ editor, label, active = false, disabled = false, onAppl
       onMouseDown={(e) => e.preventDefault()}
       onClick={() => editor && onApply(editor)}
       className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg transition-colors ${
-        active ? 'bg-rose-100 text-rose-600' : 'text-stone-600 hover:bg-rose-50 active:bg-rose-100'
+        active
+          ? 'bg-rose-100 text-rose-600 dark:bg-white/15 dark:text-rose-200'
+          : 'text-stone-600 hover:bg-rose-50 active:bg-rose-100 dark:text-rose-200/70 dark:hover:bg-white/10 dark:active:bg-white/15'
       } disabled:opacity-40`}
     >
       {children}
@@ -138,7 +140,7 @@ function Toolbar({ editor }: { editor: Editor | null }) {
     <div
       role="toolbar"
       aria-label="文字格式"
-      className="flex shrink-0 items-center gap-0.5 overflow-x-auto border-b border-rose-100/80 bg-white/95 px-3 py-2 backdrop-blur-sm"
+      className="flex shrink-0 items-center gap-0.5 overflow-x-auto border-b border-rose-100/80 bg-white/95 px-3 py-2 backdrop-blur-sm dark:border-white/10 dark:bg-[#2b1a13]/95"
     >
       {/* 标题 */}
       <ToolbarButton
@@ -268,5 +270,5 @@ function Toolbar({ editor }: { editor: Editor | null }) {
 
 /** 工具栏分组分隔线 */
 function Divider() {
-  return <span className="mx-1.5 h-5 w-px shrink-0 bg-rose-100" aria-hidden />
+  return <span className="mx-1.5 h-5 w-px shrink-0 bg-rose-100 dark:bg-white/15" aria-hidden />
 }

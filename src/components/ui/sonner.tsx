@@ -1,14 +1,14 @@
 "use client"
 
-import { useTheme } from "next-themes"
 import { Toaster as Sonner, ToasterProps } from "sonner"
+import { useWallpaperTheme } from "@/components/auth/WallpaperTheme"
 
 const Toaster = ({ ...props }: ToasterProps) => {
-  const { theme = "system" } = useTheme()
+  const { theme } = useWallpaperTheme()
 
   return (
     <Sonner
-      theme={theme as ToasterProps["theme"]}
+      theme={theme === "dark" ? "dark" : "light"}
       className="toaster group"
       style={
         {
