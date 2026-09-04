@@ -11,6 +11,7 @@
  */
 import type { ReactNode } from 'react'
 import { BottomNav } from '@/components/layout/BottomNav'
+import { useWallpaperTheme } from '@/components/auth/WallpaperTheme'
 
 interface AppShellProps {
   /** 顶部标题栏文字 */
@@ -19,9 +20,21 @@ interface AppShellProps {
 }
 
 export function AppShell({ title, children }: AppShellProps) {
+  const { theme } = useWallpaperTheme()
+  const dark = theme === 'dark'
   return (
-    <div className="min-h-screen bg-gradient-to-b from-rose-50 via-[#FFF7F8] to-white dark:from-[#3a241a] dark:via-[#2b1a13] dark:to-[#241510]">
-      <div className="mx-auto flex min-h-screen w-full max-w-md flex-col">
+    /* 主页面铺认证同款壁纸（深浅随全局主题切换）；
+       壁纸底色兜底避免图片加载前闪色差 */
+    <div
+      className={`relative min-h-screen bg-cover bg-center ${dark ? 'bg-[#2b1a13]' : 'bg-[#fdfbee]'}`}
+      style={{ backgroundImage: `url(${dark ? '/bg-dark.webp' : '/bg-light.webp'})` }}
+    >
+      {/* 主题色遮罩：文字直接落在壁纸上，加半透明底色 + 轻模糊保证可读 */}
+      <div
+        aria-hidden
+        className={`absolute inset-0 backdrop-blur-[2px] ${dark ? 'bg-[#2b1a13]/65' : 'bg-[#FFF7F8]/70'}`}
+      />
+      <div className="relative mx-auto flex min-h-screen w-full max-w-md flex-col">
         {/* 顶部标题栏（标题水平居中） */}
         <header className="sticky top-0 z-20 border-b border-rose-100/80 bg-white/70 backdrop-blur-md dark:border-white/10 dark:bg-[#2b1a13]/70">
           <div className="flex h-14 items-center justify-center px-5">

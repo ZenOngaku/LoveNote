@@ -132,7 +132,7 @@ function SettingsContent() {
       {/* ============ 情侣空间卡片 ============ */}
       <section
         aria-label="情侣空间"
-        className="mt-4 rounded-3xl border border-rose-100 bg-white p-5 shadow-sm"
+        className="mt-4 rounded-3xl border border-rose-100 bg-white p-5 shadow-sm dark:border-white/10 dark:bg-[#3a241a]/85"
       >
         <h2 className="text-sm font-semibold text-stone-500 dark:text-rose-200/60">情侣空间</h2>
 
@@ -219,7 +219,7 @@ function SettingsContent() {
       {/* ============ 账号卡片 ============ */}
       <section
         aria-label="账号"
-        className="mt-4 rounded-3xl border border-rose-100 bg-white p-5 shadow-sm"
+        className="mt-4 rounded-3xl border border-rose-100 bg-white p-5 shadow-sm dark:border-white/10 dark:bg-[#3a241a]/85"
       >
         <h2 className="text-sm font-semibold text-stone-500 dark:text-rose-200/60">账号</h2>
         <Button
