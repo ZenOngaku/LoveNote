@@ -113,6 +113,23 @@ export function formatDateCN(iso: string): string {
   return `${d.getFullYear()}年${d.getMonth() + 1}月${d.getDate()}日`
 }
 
+/**
+ * 取字符串的首个「可见字符」（字素）：
+ * - 完整 emoji / ZWJ 序列（如 👨👩👧）/ 国旗类双码点 都算 1 个字素
+ * - 昵称首字是 emoji 时 charAt(0) 会取到代理项显示成「?」，必须用它
+ * 浏览器不支持 Intl.Segmenter 时降级为按码点取首（Array.from 单 emoji 依然正确）。
+ */
+export function firstGrapheme(text: string): string {
+  if (!text) return ''
+  if (typeof Intl !== 'undefined' && 'Segmenter' in Intl) {
+    const segmenter = new Intl.Segmenter('zh', { granularity: 'grapheme' })
+    for (const { segment } of segmenter.segment(text)) {
+      return segment
+    }
+  }
+  return Array.from(text)[0] ?? ''
+}
+
 /* ============================================================
  * 富文本笔记工具（content 字段存 Tiptap 输出的 HTML）
  * 兼容历史数据：v2 之前的笔记 content 是纯文本，所有工具函数

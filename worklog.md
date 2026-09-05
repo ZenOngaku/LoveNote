@@ -273,3 +273,20 @@ Stage Summary:
 - 三项 UI 修改确认上线并全量回归通过；长按交互与既有点击进编辑页互不干扰
 - 迁移包已含全部新功能，用户重新下载解压即可；包内自带 git 历史与可运行配置
 - 经验：浏览器自动化验证 Supabase 应用时，Playwright add_init_script 注入 mock 是最可靠路径；mock 必须完整模拟 PostgREST 的 URL 语义（eq. 过滤、数组响应、客户端解包）
+
+---
+Task ID: 15
+Agent: Z.ai Code (主 Agent)
+Task: 修复「配对成功后首页/我的-情侣空间对方恒显示 TA」+ 对方昵称资料实时同步 + 首字 emoji 头像显示问号。
+
+Work Log:
+- 用户真实双账号联调首次跑通，暴露配对后首页 CoupleCard 与设置页情侣空间对方长期「TA」、刷新无效。静态定位：前端 TA 仅在 partner 查不到时出现，刷新无效说明是数据库策略恒不通过——schema.sql「情侣双方可互相查看资料」策略的 EXISTS 子查询里未限定外层列 id，而 couple_relation 自带 id 主键，PostgreSQL 名称解析让 id 绑定到内层 couple_relation.id（关系行自身 uuid），条件退化为 r.user_b_id = r.id 恒 false → 双方永远读不到对方 users 行；此前 mock 测试绕过 RLS 所以从未暴露
+- 修复 schema.sql：策略改限定 public.users.id + 注释说明遮蔽坑；users 表加入 supabase_realtime publication（幂等 DO block），昵称变更可实时推送
+- useCouple.ts 新增 users 表 postgres_changes 订阅（RLS 下本方只收得到本人+对方两行），changedId === partner.id 时 refresh()，对方改昵称即时上屏
+- 顺带修复用户发现的 emoji 首字头像问号：helpers.ts 新增 firstGrapheme（Intl.Segmenter 按字素取首字符，降级 Array.from），CoupleCard AvatarCircle、设置页本人与对方头像三处改用它
+- 处理 react-hooks 7 set-state-in-effect 对 useCouple 首次加载 effect 的既有报错：refresh() 改放微任务回调（Promise.resolve().then），与 useAuth/useNotes「回调内 setState」范式一致
+- 验证：full src lint 零错误、tsc --noEmit 零错误、firstGrapheme 断言（中文/英文/emoji 开头/ZWJ 家庭/肤色/国旗/组合字符）全过
+
+Stage Summary:
+- 根因是 SQL 策略列名遮蔽（非前端时序问题），需用户在 Supabase Dashboard 重跑 schema.sql（幂等）后生效
+- 重跑后建议双真实账号回归：绑定即显示对方昵称+首字头像、一方改昵称另一方不刷新自动更新、emoji 开头昵称头像正常、notes 共享作者角标不再是 TA

@@ -12,7 +12,7 @@
 --   四、开启 RLS 行级安全
 --   五、RLS 安全策略（数据隔离核心）
 --   六、新用户自动建档触发器
---   七、开启 Realtime 实时推送（notes / couple_relation）
+--   七、开启 Realtime 实时推送（notes / couple_relation / users）
 -- ============================================================
 
 
@@ -271,6 +271,10 @@ create policy "用户可查看自己的资料" on public.users
   for select using (id = (select auth.uid()));
 
 -- 情侣双方可互相查看资料（用于首页/设置页展示对方昵称）
+-- ⚠️ 注意：EXISTS 子查询内引用的外层列必须限定为 public.users.id ——
+--    couple_relation 自带 id 主键列，未限定的 id 会按名称解析绑定到内层
+--    的 couple_relation.id（关系行自身的 uuid），导致策略恒为 false、
+--    情侣双方永远读不到对方资料（首页/我的页对方恒显示「TA」）。
 drop policy if exists "情侣双方可互相查看资料" on public.users;
 create policy "情侣双方可互相查看资料" on public.users
   for select using (
@@ -278,8 +282,8 @@ create policy "情侣双方可互相查看资料" on public.users
       select 1
         from public.couple_relation r
        where r.status = 'active'
-         and ((r.user_a_id = (select auth.uid()) and r.user_b_id = id)
-           or (r.user_a_id = id and r.user_b_id = (select auth.uid())))
+         and ((r.user_a_id = (select auth.uid()) and r.user_b_id = public.users.id)
+           or (r.user_a_id = public.users.id and r.user_b_id = (select auth.uid())))
     )
   );
 
@@ -420,6 +424,14 @@ end $$;
 do $$
 begin
   alter publication supabase_realtime add table public.couple_relation;
+exception
+  when duplicate_object then null;
+end $$;
+
+-- users 表：对方修改昵称等资料时，本方首页/我的页实时同步对方展示
+do $$
+begin
+  alter publication supabase_realtime add table public.users;
 exception
   when duplicate_object then null;
 end $$;

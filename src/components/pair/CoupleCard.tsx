@@ -12,7 +12,7 @@ import { useRouter } from 'next/navigation'
 import { Heart, NotebookPen, Unlink } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { ConfirmDialog } from '@/components/notes/ConfirmDialog'
-import { formatDateCN } from '@/lib/helpers'
+import { firstGrapheme, formatDateCN } from '@/lib/helpers'
 import type { CoupleRelation, Profile } from '@/lib/types'
 
 interface CoupleCardProps {
@@ -88,9 +88,9 @@ export function CoupleCard({ myNickname, partner, relation, onUnbind }: CoupleCa
   )
 }
 
-/** 昵称首字头像圆 */
+/** 昵称首字头像圆（按字素取首字符，emoji 开头的昵称不会显示成「?」） */
 function AvatarCircle({ name, fallbackLabel = '我' }: { name: string | null; fallbackLabel?: string }) {
-  const first = (name ?? '').trim().charAt(0).toUpperCase() || fallbackLabel
+  const first = firstGrapheme((name ?? '').trim()).toUpperCase() || fallbackLabel
   return (
     <div
       aria-hidden

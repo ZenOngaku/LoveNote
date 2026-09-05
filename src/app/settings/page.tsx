@@ -26,7 +26,7 @@ import {
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { formatDateCN } from '@/lib/helpers'
+import { firstGrapheme, formatDateCN } from '@/lib/helpers'
 import { useAuth } from '@/hooks/useAuth'
 import { useCouple } from '@/hooks/useCouple'
 
@@ -107,9 +107,9 @@ function SettingsContent() {
         className="rounded-3xl border border-rose-100 bg-white p-5 shadow-sm dark:border-white/10 dark:bg-[#3a241a]/85"
       >
         <div className="flex items-center gap-4">
-          {/* 头像（昵称首字） */}
+          {/* 头像（昵称首字，按字素取首字符，emoji 开头也能正常显示） */}
           <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-rose-200 to-rose-100 text-xl font-bold text-rose-500">
-            {(displayName || '我').charAt(0).toUpperCase()}
+            {firstGrapheme(displayName).toUpperCase() || '我'}
           </div>
 
           <div className="min-w-0 flex-1">
@@ -140,7 +140,7 @@ function SettingsContent() {
           <>
             <div className="mt-3 flex items-center gap-4">
               <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-rose-50 text-base font-bold text-rose-400">
-                {(partner?.nickname || 'TA').charAt(0).toUpperCase()}
+                {firstGrapheme(partner?.nickname ?? '').toUpperCase() || 'TA'}
               </div>
               <div className="min-w-0 flex-1">
                 <p className="truncate font-medium text-stone-800 dark:text-rose-50">
@@ -235,7 +235,7 @@ function SettingsContent() {
 
       {/* 页脚 */}
       <p className="mt-8 text-center text-xs text-stone-300 dark:text-rose-200/30">
-        LoveNote v1.0 · 愿我们的每一天都被温柔记录 💗
+        LoveNote v1.1 · 愿我们的每一天都被温柔记录 💗
       </p>
 
       {/* ============ 弹窗们 ============ */}

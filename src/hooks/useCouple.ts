@@ -68,8 +68,10 @@ export function useCouple() {
   }, [user])
 
   // 首次加载 + 登录状态变化时查询
+  // 放到微任务回调中执行：effect 主体不直接同步触发 setState，
+  // 遵循 react-hooks/set-state-in-effect（refresh 幂等，无需取消防抖）
   useEffect(() => {
-    refresh()
+    void Promise.resolve().then(() => refresh())
   }, [refresh])
 
   // Realtime：couple_relation 表变更（对方绑定成功 / 解绑）时自动刷新本方页面
@@ -90,6 +92,29 @@ export function useCouple() {
       supabase.removeChannel(channel)
     }
   }, [user, refresh])
+
+  // Realtime：users 表变更（对方修改昵称等资料）时重拉对方资料，
+  // 让首页 / 我的-情侣空间等处的对方展示实时同步。
+  // RLS 限制下本方只能收到「本人 + 对方」两行变更，这里只关心对方那行。
+  const partnerId = partner?.id ?? null
+  useEffect(() => {
+    if (!user || !partnerId) return
+    const supabase = getSupabase()
+    const channel = supabase
+      .channel(`users-${user.id}`)
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'users' },
+        (payload) => {
+          const changedId = (payload.new as { id?: string } | null)?.id
+          if (changedId && changedId === partnerId) refresh()
+        },
+      )
+      .subscribe()
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [user, partnerId, refresh])
 
   /** 生成 6 位数字邀请码（24 小时有效）；已有未过期邀请码时直接返回它 */
   const generateInviteCode = useCallback(async (): Promise<OpResult> => {
