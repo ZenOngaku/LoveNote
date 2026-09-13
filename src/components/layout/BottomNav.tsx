@@ -4,17 +4,18 @@
  * ============================================================
  * BottomNav —— 底部导航栏（移动端 App 风格）
  * ============================================================
- * 三个入口：首页（配对）/ 笔记 / 我的（设置）
+ * 四个入口：首页（配对）/ 笔记 / 足迹（地图）/ 我的（设置）
  * - 当前路由高亮显示
  * - 预留 iOS 安全区域（pb-[env(safe-area-inset-bottom)]），适配刘海屏/微信 webview
  */
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Heart, NotebookPen, UserRound } from 'lucide-react'
+import { Footprints, Heart, NotebookPen, UserRound } from 'lucide-react'
 
 const NAV_ITEMS = [
   { href: '/', label: '首页', icon: Heart },
   { href: '/notes', label: '笔记', icon: NotebookPen },
+  { href: '/footprints', label: '足迹', icon: Footprints },
   { href: '/settings', label: '我的', icon: UserRound },
 ] as const
 
@@ -34,7 +35,8 @@ export function BottomNav() {
               key={href}
               href={href}
               aria-current={active ? 'page' : undefined}
-              className={`flex min-w-20 flex-1 flex-col items-center justify-center gap-1 text-[11px] transition-colors ${
+              /* min-w-0：4 个 Tab 时若保留 min-w-20（80px×4=320px）会在 320px 视口顶死 */
+              className={`flex min-w-0 flex-1 flex-col items-center justify-center gap-1 text-[11px] transition-colors ${
                 active
                   ? 'text-rose-500 dark:text-rose-300'
                   : 'text-stone-400 hover:text-rose-400 dark:text-rose-200/40 dark:hover:text-rose-300'

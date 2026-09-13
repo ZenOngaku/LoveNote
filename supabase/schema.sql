@@ -6,13 +6,13 @@
 --   2. 粘贴本文件全部内容 → Run（脚本可重复执行，具备幂等性）
 --
 -- 内容总览：
---   一、数据表（users / couple_relation / notes）
+--   一、数据表（users / couple_relation / notes / footprints）
 --   二、工具函数（current_couple_id）
 --   三、业务 RPC（生成邀请码 / 兑换邀请码 / 解除配对）
 --   四、开启 RLS 行级安全
 --   五、RLS 安全策略（数据隔离核心）
 --   六、新用户自动建档触发器
---   七、开启 Realtime 实时推送（notes / couple_relation / users）
+--   七、开启 Realtime 实时推送（notes / couple_relation / users / footprints）
 -- ============================================================
 
 
@@ -86,6 +86,35 @@ $$;
 drop trigger if exists trg_notes_updated_at on public.notes;
 create trigger trg_notes_updated_at
   before update on public.notes
+  for each row execute function public.set_updated_at();
+
+
+-- 4. footprints 足迹表（情侣共享的城市打卡：一个城市可有多条记录，城市「点亮」= 至少一条）
+create table if not exists public.footprints (
+  id              uuid primary key default gen_random_uuid(),
+  user_id         uuid not null references auth.users (id) on delete cascade,             -- 记录创建者
+  couple_id       uuid not null references public.couple_relation (id) on delete cascade, -- 所属情侣空间（足迹无私人形态，恒非空）
+  city_adcode     int  not null,                       -- 城市行政区划代码（与 public/data/cities.json 同源）
+  city_name       text not null,                       -- 城市名（冗余存储，地图数据更新后历史记录仍可读）
+  province_adcode int,                                 -- 所属省级 adcode（可选，便于按省统计）
+  title           text not null default '',
+  tags            text[] not null default '{}',        -- 标签（预设 + 自定义；数量上限见下方约束，单标签长度由前端归一化保证）
+  visited_at      date not null default current_date,  -- 记录日期（date 无时区，前端统一传 YYYY-MM-DD）
+  content         text not null default '',
+  created_at      timestamptz not null default now(),
+  updated_at      timestamptz not null default now(),
+  constraint footprints_title_len    check (char_length(title) <= 60),
+  constraint footprints_content_len  check (char_length(content) <= 2000),
+  constraint footprints_tags_count   check (array_length(tags, 1) is null or array_length(tags, 1) <= 8)
+);
+
+create index if not exists idx_footprints_couple  on public.footprints (couple_id);
+create index if not exists idx_footprints_city    on public.footprints (couple_id, city_adcode);
+create index if not exists idx_footprints_visited on public.footprints (couple_id, visited_at desc);
+
+drop trigger if exists trg_footprints_updated_at on public.footprints;
+create trigger trg_footprints_updated_at
+  before update on public.footprints
   for each row execute function public.set_updated_at();
 
 
@@ -256,6 +285,7 @@ $$;
 alter table public.users           enable row level security;
 alter table public.couple_relation enable row level security;
 alter table public.notes           enable row level security;
+alter table public.footprints      enable row level security;
 
 
 -- ============================================================
@@ -387,6 +417,41 @@ create policy "共享笔记仅情侣双方可删" on public.notes
   );
 
 
+-- ---------- footprints 足迹表：情侣共享（无私人形态） ----------
+-- 语义与「共享笔记」一致：
+--   1) 当前共享空间（couple_id = 自己所在的 active 关系）内的记录，绑定双方可读 / 写 / 改 / 删；
+--   2) 自己亲手创建的记录，解绑后仍保留在自己账号下（对方与第三方无法访问）。
+drop policy if exists "足迹仅情侣双方可读" on public.footprints;
+create policy "足迹仅情侣双方可读" on public.footprints
+  for select using (
+    couple_id = public.current_couple_id()      -- 当前共享空间的记录
+    or user_id = (select auth.uid())            -- 自己创建的记录（解绑后仍保留）
+  );
+
+drop policy if exists "足迹仅情侣双方可写" on public.footprints;
+create policy "足迹仅情侣双方可写" on public.footprints
+  for insert with check (
+    user_id = (select auth.uid())
+    and couple_id = public.current_couple_id()  -- 必须写入当前共享空间
+  );
+
+drop policy if exists "足迹仅情侣双方可改" on public.footprints;
+create policy "足迹仅情侣双方可改" on public.footprints
+  for update
+  using (
+    couple_id = public.current_couple_id() or user_id = (select auth.uid())
+  )
+  with check (
+    couple_id = public.current_couple_id() or user_id = (select auth.uid())
+  );
+
+drop policy if exists "足迹仅情侣双方可删" on public.footprints;
+create policy "足迹仅情侣双方可删" on public.footprints
+  for delete using (
+    couple_id = public.current_couple_id() or user_id = (select auth.uid())
+  );
+
+
 -- ============================================================
 -- 六、新用户自动建档触发器
 -- ============================================================
@@ -432,6 +497,14 @@ end $$;
 do $$
 begin
   alter publication supabase_realtime add table public.users;
+exception
+  when duplicate_object then null;
+end $$;
+
+-- footprints 表：任一方记录/编辑/删除足迹后，双方足迹地图自动刷新（城市点亮状态实时同步）
+do $$
+begin
+  alter publication supabase_realtime add table public.footprints;
 exception
   when duplicate_object then null;
 end $$;

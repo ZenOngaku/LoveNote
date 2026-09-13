@@ -15,6 +15,7 @@
 | 💔 解除配对 | 二次确认后解绑；共享空间关闭，共享笔记保留在创建者账号下 |
 | 💞 共享笔记 | 绑定双方共同查看 / 新增 / 编辑 / 删除，**Realtime 实时同步** |
 | 🔒 私人笔记 | 仅本人可见可写，另一半完全看不到 |
+| 📍 足迹地图 | 可缩放矢量世界地图（默认聚焦并高亮中国），点城市即「点亮」足迹、打标签、记日志，情侣双方 Realtime 实时同步 |
 | 📱 移动端优先 | 手机竖屏触控友好（44px+ 触控区、16px 输入字号防 iOS 缩放、安全区域适配），电脑端正常浏览 |
 | 💬 反馈完善 | 加载骨架屏、成功 / 失败 Toast、错误中文提示、危险操作二次确认 |
 
@@ -25,7 +26,7 @@
 - **Supabase**：
   - `Auth`：邮箱密码认证、会话持久化
   - `Postgres + RLS`：数据存储与行级安全隔离
-  - `Realtime`：notes / couple_relation 表变更实时推送
+  - `Realtime`：notes / couple_relation / users / footprints 表变更实时推送
   - `RPC（数据库函数）`：邀请码生成 / 兑换 / 解绑的原子操作
 
 > 架构说明：业务逻辑全部在前端（浏览器直连 Supabase），**不依赖任何自建服务端接口**；数据库权限完全由 `supabase/schema.sql` 中的 RLS 策略管控，即使拿到 anon key 也无法越权读写他人数据。
@@ -43,6 +44,7 @@
 │   │   ├── forgot-password/page.tsx # 忘记密码页
 │   │   ├── reset-password/page.tsx  # 重置密码页（邮件落地）
 │   │   ├── notes/page.tsx         # 笔记主页（共享/私人双 Tab）
+│   │   ├── footprints/page.tsx    # 足迹页（矢量地图 + 城市日志面板）
 │   │   ├── settings/page.tsx      # 个人设置页（资料/解绑/退出）
 │   │   ├── layout.tsx             # 根布局（AuthProvider + Toaster）
 │   │   └── globals.css            # 全局样式（浅粉主题变量）
@@ -58,6 +60,13 @@
 │   │   ├── pair/
 │   │   │   ├── PairPanel.tsx      # 配对面板（邀请码生成/输入/倒计时）
 │   │   │   └── CoupleCard.tsx     # 已绑定情侣卡片（含解绑）
+│   │   ├── footprint/
+│   │   │   ├── FootprintMap.tsx   # 矢量地图（SVG 分层渲染 + 手势 + 城市点位）
+│   │   │   ├── CitySheet.tsx      # 城市日志底部面板（时间线 + 新增/编辑）
+│   │   │   ├── FootprintTimeline.tsx # 记录时间线（按到访日期正序）
+│   │   │   ├── FootprintForm.tsx  # 记录表单（标题/日期/标签/正文）
+│   │   │   ├── TagPicker.tsx      # 标签选择（预设 + 自定义多选）
+│   │   │   └── DateField.tsx      # 日期输入（原生日期选择器 + 星期）
 │   │   ├── notes/
 │   │   │   ├── NoteTabs.tsx       # 共享/私人双 Tab 切换
 │   │   │   ├── NoteList.tsx       # 笔记列表（骨架屏/空状态）
@@ -69,17 +78,36 @@
 │   ├── hooks/
 │   │   ├── useAuth.tsx            # 鉴权 Hook（会话持久化/资料/登录注册退出）
 │   │   ├── useCouple.ts           # 情侣关系 Hook（配对/解绑 + Realtime）
-│   │   └── useNotes.ts            # 笔记 Hook（CRUD + Realtime 实时同步）
+│   │   ├── useNotes.ts            # 笔记 Hook（CRUD + Realtime 实时同步）
+│   │   ├── useFootprints.ts       # 足迹 Hook（CRUD + 城市聚合 + Realtime）
+│   │   ├── useMapData.ts          # 地图数据 Hook（首屏三件套 + 省界惰性加载）
+│   │   └── useMapViewport.ts      # 地图手势 Hook（拖拽/双指缩放/轻点命中）
 │   └── lib/
 │       ├── supabase/client.ts     # ⭐ Supabase 客户端初始化（单例）
 │       ├── types.ts               # 数据类型定义
-│       └── helpers.ts             # 工具函数（时间格式化/错误翻译/复制）
+│       ├── helpers.ts             # 工具函数（时间格式化/错误翻译/复制）
+│       ├── footprints.ts          # 足迹纯函数（标签归一化/日期/排序/聚合/标签剔除）
+│       └── map/                   # 地图基础库
+│           ├── constants.ts       # 单位/bbox/缩放档位等编译期常量
+│           ├── projection.ts      # Web Mercator 投影（与构建脚本同源）
+│           ├── viewport.ts        # 视口数学（取景/夹紧/锚点缩放/命中）
+│           ├── geodata.ts         # 地图数据加载（自身域名静态资源）
+│           └── types.ts           # 地图类型定义
 ├── public/
+│   ├── data/                      # ⭐ 足迹地图数据（构建产物，见 public/data/README.md）
+│   │   ├── world.json             # 世界国界轮廓（~39KB）
+│   │   ├── china.json             # 中国轮廓（含南海诸岛，~26KB）
+│   │   ├── cities.json            # 中国 370 个地级市 + 198 个世界首都（~39KB）
+│   │   ├── cities-world.json      # 其余约 2000 个世界城市（放大后惰性加载，~190KB）
+│   │   ├── world-detail.json      # 中等精度世界国界（放大后替代粗轮廓，~584KB）
+│   │   ├── tiles/detail-*.json    # 精细国界分块（16×16，深放大按视野加载，单块 ≤101KB）
+│   │   └── provinces.json         # 34 个省级边界（放大后惰性加载，~87KB）
 │   ├── bg-light.webp              # 认证页浅色壁纸
 │   ├── bg-dark.webp               # 认证页深色壁纸
 │   ├── logo.svg                   # Logo
 │   └── robots.txt
 ├── scripts/
+│   ├── build-geodata.mjs          # ⭐ 足迹地图数据生成（DataV + world-atlas → public/data）
 │   ├── make-bg-light.mjs          # 浅色壁纸生成：墨迹印章 + 斜向点阵密排
 │   └── make-bg-dark.mjs           # 深色壁纸生成：墨色重映射
 ├── .github/workflows/keep-alive.yml # Supabase 免费版保活定时任务
@@ -105,11 +133,14 @@
 
 1. 打开 Supabase Dashboard → 左侧 **SQL Editor** → **New query**
 2. 复制 `supabase/schema.sql` 的**全部内容**，粘贴进去 → 点击 **Run**
-3. 执行成功后，可以在左侧 Table Editor 中看到三张表：
+3. 执行成功后，可以在左侧 Table Editor 中看到四张表：
    - `users` 用户扩展表
    - `couple_relation` 情侣配对关系表
    - `notes` 笔记表
-4. 确认 Realtime 已开启：Dashboard → **Database → Replication**，`notes` 与 `couple_relation` 应已加入 `supabase_realtime` publication（脚本已自动完成）
+   - `footprints` 足迹表（v2.0 新增）
+4. 确认 Realtime 已开启：Dashboard → **Database → Replication**，`notes` / `couple_relation` / `users` / `footprints` 应已加入 `supabase_realtime` publication（脚本已自动完成）
+
+> 脚本**幂等**：每次升级后（例如 v1.1 的对 users 策略修复、v2.0 的 footprints 表）把最新 `schema.sql` 全文重跑一遍即可，不会重复建表或丢数据。
 
 ## 第三步：配置环境变量
 
@@ -196,6 +227,29 @@ npm run dev
 - [ ] B 尝试 `update notes set ... where user_id = A` → 影响 0 行（无 UPDATE 权限）
 - [ ] B 查询 A 的私人笔记 → 查不到
 
+**D2. 足迹地图（v2.0）**
+
+- [ ] 底部导航出现 4 个入口：首页 / 笔记 / 足迹 / 我的，320px 窄屏下不挤压
+- [ ] 进入 `/footprints`：地图默认聚焦中国（中国轮廓高亮、完整落在屏幕内）
+- [ ] 双指捏合可缩放、单指拖拽可平移（微信内置浏览器里也不带动整页滚动/缩放）
+- [ ] 一直缩小可以把**整个世界**装进画面（不再只限于中国），并能拖动到其他国家
+- [ ] 地图横向可以一直拖（跨过 180° 经线后从另一侧接回来，世界循环）
+- [ ] 贴边城市的名字不会被裁断（自动翻到点位内侧）
+- [ ] 放大到别的国家后能看到陆地与**国界线**（不再是一片空白），城市点位可正常记录（如「东京」）
+- [ ] 持续放大时海岸线依然平滑（精细分块会按视野自动加载）
+- [ ] 没有城市名的点明显更小更淡，不会与带名字的点混淆
+- [ ] 密集区域点哪个小点就打开哪个城市（不会因为旁边有个已点亮城市而误选）
+- [ ] 未点亮任何城市时，提示条显示在左上角图例下方、不重叠
+- [ ] 点没有小圆点的空白区域不会弹出任何城市面板
+- [ ] 国内城市面板标题下显示所属省份（如「浙江省」；直辖市不显示）
+- [ ] 点右下角 `+` / `−` 可缩放，点「回到中国」回到默认取景
+- [ ] 点任意城市 → 弹出该城市面板；写下标题/日期/标签/正文 → 保存后地图上该城市点亮
+- [ ] 同一城市可继续添加多条记录，面板内**按到访日期正序**展示
+- [ ] 编辑 / 删除记录：删除需二次确认
+- [ ] 对方不刷新页面时：你新增/编辑/删除后，对方地图与面板**自动更新**（Realtime）
+- [ ] 把某城市最后一条记录删掉 → 该城市变回未点亮
+- [ ] 未绑定情侣时进入 `/footprints`：显示「绑定情侣后，一起点亮你们去过的地方」，点城市只弹提示
+
 **E. 边界情况**
 
 - [ ] 邀请码过期测试：SQL Editor 执行
@@ -233,6 +287,20 @@ npm run dev
 **线上验证**：打开 Vercel 域名 → 注册新账号 → 写一条共享笔记 → Supabase Table Editor 中 `notes` 表应出现新行；另一台设备登录同一账号应能实时看到笔记。
 
 > **免费额度提醒**：Supabase 免费项目连续 7 天无 API 请求会被自动暂停。仓库内 `.github/workflows/keep-alive.yml` 每 2 天自动 ping 一次兜底，但需要先在 GitHub 仓库 **Settings → Secrets and variables → Actions** 中添加 `SUPABASE_URL` 与 `SUPABASE_ANON_KEY` 两个 Secret 才会生效。
+
+## 🗺 足迹地图数据与合规
+
+「足迹」页用的是**内嵌矢量地图**：世界国界 + 中国省级边界 + 中国地级市与全球约 2200 个城市点位
+（均带中文名；国外城市另有英文名与当地外文名，点开面板可见），地图横向支持世界循环，
+在构建期预投影成 SVG path 后放进 `public/data/`（运行时从自己域名按需加载，
+**不请求任何第三方地图服务**，因此在微信内置浏览器与国内网络下都稳定）。
+
+- 数据来源、体积与重新生成方式见 [`public/data/README.md`](public/data/README.md)
+- 重新生成：`node scripts/build-geodata.mjs`（改动数据源或简化参数时用；脚本自带体积与坐标自检）
+- 坐标常量（中国 bbox、单位总量）在 `src/lib/map/constants.ts`，脚本末尾会打印最新 bbox 供校准
+- ⚠️ **合规提示**：数据源为阿里 DataV 行政区划（含南海诸岛/九段线），仅供**个人记录用途**，
+  不含审图号；若要作为公开产品发布，中国地图需使用标准地图并通过审图流程 ——
+  届时代码零改动，只需替换 `public/data/*.json`
 
 ## 🎨 壁纸定制（浅色 / 深色）
 

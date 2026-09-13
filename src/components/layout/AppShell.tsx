@@ -16,10 +16,15 @@ import { useWallpaperTheme } from '@/components/auth/WallpaperTheme'
 interface AppShellProps {
   /** 顶部标题栏文字 */
   title?: string
+  /**
+   * 满屏布局：内容区去掉内边距，交给页面自己撑满（足迹地图页用）。
+   * 底部仍预留 BottomNav 的高度 + iOS 安全区，避免内容被导航栏遮住。
+   */
+  bleed?: boolean
   children: ReactNode
 }
 
-export function AppShell({ title, children }: AppShellProps) {
+export function AppShell({ title, bleed = false, children }: AppShellProps) {
   const { theme } = useWallpaperTheme()
   const dark = theme === 'dark'
   return (
@@ -42,8 +47,18 @@ export function AppShell({ title, children }: AppShellProps) {
           </div>
         </header>
 
-        {/* 页面内容 */}
-        <main className="flex-1 px-4 pb-28 pt-4">{children}</main>
+        {/* 页面内容（bleed = 满屏模式：地图页用 flex 撑满，底部仍避开导航栏）
+            注意：bleed 模式内不要用 h-full —— flex 项没有「确定高度」，
+            百分比高度会退化成 SVG 的默认 150px 高，地图只剩一条。 */}
+        <main
+          className={
+            bleed
+              ? 'relative flex flex-1 flex-col overflow-hidden pb-[calc(4rem+env(safe-area-inset-bottom))]'
+              : 'flex-1 px-4 pb-28 pt-4'
+          }
+        >
+          {children}
+        </main>
       </div>
 
       {/* 底部导航 */}

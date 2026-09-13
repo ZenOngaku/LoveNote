@@ -319,3 +319,71 @@
 .dark .note-editor .ProseMirror blockquote {
   color: #fecdd3;
 }
+
+/* ============================================================
+ * 足迹地图（SVG）
+ * 说明：SVG 元素虽然也能吃 Tailwind 类，但地图图层数量多、类名会非常冗长，
+ *       且深色模式必须靠 .dark 祖先（dark: 变体在原生 CSS 里用不了），
+ *       因此配色统一在此定义。点的半径 / 标签字号 / 描边宽度由组件按
+ *       1/scale 计算后内联到 SVG 属性上，这里只管颜色与形状。
+ * ============================================================ */
+.fp-map {
+  display: block;
+  width: 100%;
+  height: 100%;
+  touch-action: none;               /* 阻止浏览器接管手势（配合 touchmove preventDefault） */
+  overscroll-behavior: contain;     /* 阻止微信/浏览器的下拉刷新与橡皮筋滚动 */
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;      /* 长按不弹「复制/保存图片」菜单 */
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* 世界底图：陆地填充 + 国界细描边（缩小时是 110m 粗轮廓，放大后换成 50m 高精度层）。
+   描边不随缩放变粗，放大后国界线依旧是一条细线 */
+.fp-map .fp-world { fill: #f5eaee; stroke: #d9bcc6; stroke-width: 1; }
+.fp-map .fp-world path { vector-effect: non-scaling-stroke; }
+/* 中国轮廓：默认高亮 + 细描边（35 个省级面自带省界，全景下也能看清中国形状） */
+.fp-map .fp-china {
+  fill: #ffe4e6;
+  stroke: #fbcfd6;
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+}
+/* 省级边界：放大后显示（描边不随缩放变粗） */
+.fp-map .fp-province { fill: none; stroke: #fecdd3; stroke-width: 1; vector-effect: non-scaling-stroke; }
+
+/* 城市点位：命中热区（透明加粗）与视觉圆点分离 */
+.fp-map .fp-hit { fill: transparent; }
+.fp-map .fp-dot { fill: #fdba74; stroke: #ffffff; }
+/* 无名字的次要点：更淡，视觉上不与带名字的点混淆 */
+.fp-map .fp-dot--minor { fill: #f6dfe4; }
+.fp-map .fp-dot--lit { fill: #f43f5e; stroke: #ffffff; }
+.fp-map .fp-dot--sel { fill: #be123c; stroke: #ffffff; }
+/* 标签：paint-order 给文字加一圈底色描边，压在省界上也能看清。
+   注意不要在这里写 text-anchor —— CSS 会盖掉组件按边缘翻转设置的锚点属性 */
+.fp-map .fp-label {
+  fill: #a8a29e;
+  paint-order: stroke;
+  stroke: #fff7f8;
+  font-weight: 500;
+}
+.fp-map .fp-label--lit { fill: #e11d48; font-weight: 600; }
+/* 选中城市的呼吸圈 */
+.fp-map .fp-ring { stroke: #f43f5e; opacity: 0.55; }
+
+/* 捏合过程中隐藏标记层：点位尺寸按 1/scale 计算，缩放中途会变形，松手后重算 */
+.fp-map .fp-markers { transition: opacity 0.15s ease; }
+.fp-map[data-gesture='pinch'] .fp-markers { opacity: 0; }
+
+/* 深色模式覆写 */
+.dark .fp-map .fp-world { fill: rgb(255 255 255 / 0.05); stroke: rgb(255 255 255 / 0.16); }
+.dark .fp-map .fp-china { fill: rgb(251 113 133 / 0.22); stroke: rgb(253 164 175 / 0.3); }
+.dark .fp-map .fp-province { stroke: rgb(253 164 175 / 0.25); }
+.dark .fp-map .fp-dot { fill: rgb(253 164 175 / 0.45); stroke: #2b1a13; }
+.dark .fp-map .fp-dot--minor { fill: rgb(253 164 175 / 0.22); }
+.dark .fp-map .fp-dot--lit { fill: #fb7185; stroke: #2b1a13; }
+.dark .fp-map .fp-dot--sel { fill: #fda4af; stroke: #2b1a13; }
+.dark .fp-map .fp-label { fill: rgb(253 164 175 / 0.62); stroke: #2b1a13; }
+.dark .fp-map .fp-label--lit { fill: #fda4af; }
+.dark .fp-map .fp-ring { stroke: #fda4af; opacity: 0.5; }
