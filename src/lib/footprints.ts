@@ -73,6 +73,47 @@ export function weekdayCN(iso: string): string {
   return ['周日', '周一', '周二', '周三', '周四', '周五', '周六'][d.getDay()]
 }
 
+/**
+ * 某月（YYYY-MM）的日历网格：周一作为每周第一天。
+ * 返回前置空格数与当月每一天的 YYYY-MM-DD，供自绘日期面板使用。
+ */
+export function monthGrid(month: string): { leading: number; days: string[] } {
+  const [year, monthIndex] = month.split('-').map(Number)
+  if (!year || !monthIndex) return { leading: 0, days: [] }
+  // getDay()：周日 = 0，这里换算成「周一 = 0」的排布
+  const leading = (new Date(year, monthIndex - 1, 1).getDay() + 6) % 7
+  const total = new Date(year, monthIndex, 0).getDate()
+  const days = Array.from({ length: total }, (_, i) => toISODate(new Date(year, monthIndex - 1, i + 1)))
+  return { leading, days }
+}
+
+/** 月份加减（YYYY-MM，delta 可正可负） */
+export function shiftMonth(month: string, delta: number): string {
+  const [year, monthIndex] = month.split('-').map(Number)
+  const shifted = new Date(year, monthIndex - 1 + delta, 1)
+  return `${shifted.getFullYear()}-${String(shifted.getMonth() + 1).padStart(2, '0')}`
+}
+
+/**
+ * 年份选择的「一页」：从 startYear 开始连续 size 年（默认 12 年，4×3 网格）。
+ * 用于日期面板里点标题切换到年份网格、快速跳到多年前。
+ */
+export function yearGrid(startYear: number, size = 12): number[] {
+  return Array.from({ length: size }, (_, i) => startYear + i)
+}
+
+/** 某年的起始页（把年份对齐到 size 的整数倍，保证翻页稳定） */
+export function yearPageStart(year: number, size = 12): number {
+  return Math.floor(year / size) * size
+}
+
+/** 月份中文标题：2024年5月 */
+export function formatMonthCN(month: string): string {
+  const [year, monthIndex] = month.split('-').map(Number)
+  if (!year || !monthIndex) return ''
+  return `${year}年${monthIndex}月`
+}
+
 /** 时间线展示日期：2024年5月1日 · 周三；非法输入返回空串 */
 export function formatVisitCN(iso: string): string {
   const date = formatDateCN(iso)

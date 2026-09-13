@@ -2,19 +2,21 @@
 
 /**
  * ============================================================
- * DateField —— 记录日期输入（足迹表单用）
+ * DateField —— 记录日期（点击后弹出自绘日期面板）
  * ============================================================
- * 用原生 <input type="date">：移动端唤起系统日期选择器，微信 XWeb 也稳定支持，
- * 比自写日历控件更省心。
+ * 值全程是 YYYY-MM-DD 字符串（数据库列为 date）：
+ * 不要用 toISOString().slice(0, 10) 生成默认值（UTC 在东八区凌晨会串成前一天），
+ * 默认值请用 src/lib/footprints.ts 的 todayISO()。
  *
- * ⚠️ 值全程是 YYYY-MM-DD 字符串（数据库列为 date）：
- *    不要用 toISOString().slice(0, 10) 生成默认值（UTC 在东八区凌晨会串成前一天），
- *    默认值请用 src/lib/footprints.ts 的 todayISO()。
+ * 用自绘面板而不是原生 <input type="date">：后者在移动端会唤起系统日期滚轮，
+ * 而滚轮的触感反馈（震动）网页侧关不掉（详见 DatePickerSheet 的说明）。
  */
-import { weekdayCN } from '@/lib/footprints'
+import { useState } from 'react'
+import { CalendarDays } from 'lucide-react'
+import { DatePickerSheet } from '@/components/footprint/DatePickerSheet'
+import { formatVisitCN, todayISO } from '@/lib/footprints'
 
 interface DateFieldProps {
-  id?: string
   /** YYYY-MM-DD */
   value: string
   /** 可选上限（一般传今天，避免记录未来日期） */
@@ -22,18 +24,33 @@ interface DateFieldProps {
   onChange: (value: string) => void
 }
 
-export function DateField({ id = 'footprint-date', value, max, onChange }: DateFieldProps) {
+export function DateField({ value, max = todayISO(), onChange }: DateFieldProps) {
+  const [open, setOpen] = useState(false)
+
   return (
-    <div className="flex h-14 items-center gap-3 rounded-2xl border border-rose-100 bg-white px-4 dark:border-white/10 dark:bg-white/5">
-      <input
-        id={id}
-        type="date"
+    <>
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        aria-label="选择日期"
+        className="flex h-14 w-full items-center gap-3 rounded-2xl border border-rose-100 bg-white px-4 text-left transition-colors active:bg-rose-50 dark:border-white/10 dark:bg-white/5 dark:active:bg-white/10"
+      >
+        <CalendarDays className="h-4 w-4 shrink-0 text-rose-400" aria-hidden />
+        <span className="min-w-0 flex-1 truncate text-sm text-stone-700 dark:text-rose-100">
+          {formatVisitCN(value)}
+        </span>
+      </button>
+
+      <DatePickerSheet
+        open={open}
         value={value}
         max={max}
-        onChange={(event) => onChange(event.target.value)}
-        className="h-9 min-w-0 flex-1 bg-transparent text-sm text-stone-700 outline-none dark:text-rose-100 [color-scheme:light] dark:[color-scheme:dark]"
+        onSelect={(next) => {
+          onChange(next)
+          setOpen(false)
+        }}
+        onClose={() => setOpen(false)}
       />
-      <span className="shrink-0 text-xs text-stone-400 dark:text-rose-200/50">{weekdayCN(value)}</span>
-    </div>
+    </>
   )
 }

@@ -47,9 +47,6 @@ export function AuthShell({ children }: { children: ReactNode }) {
       <h1 className={`mt-4 text-2xl font-bold tracking-wide ${dark ? 'text-rose-50' : 'text-rose-900'}`}>
         LoveNote
       </h1>
-      <p className={`mt-1 text-sm ${dark ? 'text-rose-200/80' : 'text-rose-400'}`}>
-        属于两个人的小小记事本
-      </p>
       {children}
     </div>
   )

@@ -26,6 +26,17 @@ const TAP_MOVE_TOLERANCE = 8
 /** 轻点最长持续时间（毫秒） */
 const TAP_MAX_DURATION = 350
 
+/**
+ * 手势「会话」级状态：从第一根手指按下到最后一根手指抬起为一次会话。
+ * 为什么需要它：捏合结束时会先抬起一根、再抬起另一根，若只按「当前基线」判断，
+ * 最后那根手指会被当成一次新的轻点 —— 于是捏合会顺带打开手指下的城市。
+ * 会话级记录「是否用过双指」「是否拖动过」，整段手势内一旦发生就不再判轻点。
+ */
+interface GestureSession {
+  moved: boolean
+  multi: boolean
+}
+
 interface GestureState {
   /** 手势起始时的视口（捏合以它为基准，避免误差累积） */
   baseView: MapView
@@ -62,6 +73,7 @@ export function useMapViewport({ onTap }: UseMapViewportOptions = {}) {
   /** 事件源互斥标记 */
   const sourceRef = useRef<'pointer' | 'touch' | null>(null)
   const gestureRef = useRef<GestureState | null>(null)
+  const sessionRef = useRef<GestureSession | null>(null)
   /** 用户是否已经自己操作过视口（拖动/缩放）；未操作前尺寸变化一律重新取景 */
   const interactedRef = useRef(false)
 
@@ -137,6 +149,9 @@ export function useMapViewport({ onTap }: UseMapViewportOptions = {}) {
         gestureRef.current = null
         return
       }
+      // 会话状态：多指出现过就标记（整段手势内不会退回单指判定）
+      if (!sessionRef.current) sessionRef.current = { moved: false, multi: false }
+      if (points.length > 1) sessionRef.current.multi = true
       const [first] = points
       const gesture: GestureState = {
         baseView: current,
@@ -176,6 +191,7 @@ export function useMapViewport({ onTap }: UseMapViewportOptions = {}) {
         }
         if (dx !== 0 || dy !== 0) {
           interactedRef.current = true
+          if (sessionRef.current) sessionRef.current.moved = true
           paint(panBy(current, dx, dy, viewport))
         }
         return
@@ -193,6 +209,7 @@ export function useMapViewport({ onTap }: UseMapViewportOptions = {}) {
       }
       gesture.moved = true
       interactedRef.current = true
+      if (sessionRef.current) sessionRef.current.moved = true
       const ratio = distance / gesture.startDistance
       const zoomed = zoomAtScale(
         gesture.baseView,
@@ -209,15 +226,20 @@ export function useMapViewport({ onTap }: UseMapViewportOptions = {}) {
     /** 手势收尾：提交视口、判定轻点、复位状态 */
     const endGesture = () => {
       const gesture = gestureRef.current
+      const session = sessionRef.current
       const current = viewRef.current
       gestureRef.current = null
+      sessionRef.current = null
       sourceRef.current = null
       setPinching(false)
       if (!gesture || !current) return
       commit(current)
+      // 轻点判定只看整段手势：期间出现过双指、或拖动过，就一律不算轻点
       const isTap =
         !gesture.moved &&
         !gesture.pinched &&
+        !session?.multi &&
+        !session?.moved &&
         Date.now() - gesture.startAt <= TAP_MAX_DURATION
       if (isTap) onTap?.(gesture.startPoint[0], gesture.startPoint[1], current)
     }
